@@ -48,6 +48,10 @@
 				</v-button>
 			</div>
 
+			<div class="field full">
+				<v-button small full-width :disabled="!file" @click="importDialogActive = true">Advanced Import</v-button>
+			</div>
+
 			<v-divider />
 
 			<div class="field full">
@@ -56,6 +60,17 @@
 				</v-button>
 			</div>
 		</div>
+
+		<v-drawer
+			v-model="importDialogActive"
+			:title="`${t('label_import')}: ${file ? file.name : ''}`"
+			icon="import_export"
+			persistent
+			@esc="importDialogActive = false"
+			@cancel="importDialogActive = false"
+		>
+			<import-sidebar-detail :collection="collection" :file="file" />
+		</v-drawer>
 
 		<v-drawer
 			v-model="exportDialogActive"
@@ -222,6 +237,7 @@ import { unexpectedError } from '@/utils/unexpected-error';
 import { debounce } from 'lodash';
 import { getEndpoint } from '@directus/shared/utils';
 import FolderPicker from '@/views/private/components/folder-picker/folder-picker.vue';
+import ImportSidebarDetail from '@/views/private/components/import-sidebar-detail/import-sidebar-detail.vue';
 
 type LayoutQuery = {
 	fields?: string[];
@@ -254,6 +270,7 @@ const file = ref<File | null>(null);
 const { uploading, progress, importing, uploadFile } = useUpload();
 
 const exportDialogActive = ref(false);
+const importDialogActive = ref(false);
 
 const fileExtension = computed(() => {
 	if (file.value === null) return null;
@@ -313,7 +330,7 @@ const getItemCount = debounce(async () => {
 	itemCountLoading.value = true;
 
 	try {
-		const count = await api
+		itemCount.value = await api
 			.get(getEndpoint(collection.value), {
 				params: {
 					...exportSettings,
@@ -327,8 +344,6 @@ const getItemCount = debounce(async () => {
 					return Number(response.data.data[0].count);
 				}
 			});
-
-		itemCount.value = count;
 	} finally {
 		itemCountLoading.value = false;
 	}
@@ -406,7 +421,7 @@ function useUpload() {
 				onUploadProgress: (progressEvent: ProgressEvent) => {
 					const percentCompleted = Math.floor((progressEvent.loaded * 100) / progressEvent.total);
 					progress.value = percentCompleted;
-					importing.value = percentCompleted === 100 ? true : false;
+					importing.value = percentCompleted === 100;
 				},
 			});
 
