@@ -9,6 +9,7 @@ export default definePanel({
 	id: 'variable',
 	name: '$t:panels.variable.name',
 	description: '$t:panels.variable.description',
+	skipUndefinedKeys: ['options'],
 	icon: 'science',
 	component: PanelVariable,
 	variable: true,
