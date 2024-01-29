@@ -10,10 +10,11 @@ import { adjustFieldsForDisplays } from '@/utils/adjust-fields-for-displays';
 import { formatItemsCountPaginated } from '@/utils/format-items-count';
 import { getItemRoute } from '@/utils/get-route';
 import { parseFilter } from '@/utils/parse-filter';
+import DrawerBatch from '@/views/private/components/drawer-batch.vue';
 import DrawerCollection from '@/views/private/components/drawer-collection.vue';
 import DrawerItem from '@/views/private/components/drawer-item.vue';
 import SearchInput from '@/views/private/components/search-input.vue';
-import { Filter } from '@directus/types';
+import { Filter, PrimaryKey } from '@directus/types';
 import { deepMap, getFieldsFromTemplate } from '@directus/utils';
 import { clamp, get, isEmpty, isNil } from 'lodash';
 import { render } from 'micromustache';
@@ -147,6 +148,7 @@ const {
 	isItemSelected,
 	isLocalItem,
 	getItemEdits,
+	updateFetchedItems,
 } = useRelationMultiple(value, query, relationInfo, primaryKey);
 
 const { createAllowed, deleteAllowed, updateAllowed } = useRelationPermissionsO2M(relationInfo);
@@ -318,6 +320,14 @@ function deleteItem(item: DisplayItem) {
 	remove(item);
 }
 
+const batchEditActive = ref(false);
+const selection = ref<PrimaryKey[]>([]);
+
+async function batchRefresh() {
+	selection.value = [];
+	await updateFetchedItems();
+}
+
 const values = inject('values', ref<Record<string, any>>({}));
 
 const customFilter = computed(() => {
@@ -403,8 +413,19 @@ function getLinkForItem(item: DisplayItem) {
 				</div>
 
 				<v-button
+					v-if="updateAllowed && selection.length > 0"
+					v-tooltip.bottom="t('edit')"
+					rounded
+					icon
+					secondary
+					@click="batchEditActive = true"
+				>
+					<v-icon name="edit" outline />
+				</v-button>
+
+				<v-button
 					v-if="!disabled && enableSelect && updateAllowed"
-					v-tooltip.bottom="updateAllowed ? t('add_existing') : t('not_allowed')"
+					v-tooltip.bottom="t('add_existing')"
 					rounded
 					icon
 					:secondary="enableCreate"
@@ -415,7 +436,7 @@ function getLinkForItem(item: DisplayItem) {
 
 				<v-button
 					v-if="!disabled && enableCreate && createAllowed"
-					v-tooltip.bottom="createAllowed ? t('create_item') : t('not_allowed')"
+					v-tooltip.bottom="t('create_item')"
 					rounded
 					icon
 					@click="createItem"
@@ -428,12 +449,15 @@ function getLinkForItem(item: DisplayItem) {
 				v-if="layout === LAYOUTS.TABLE"
 				v-model:sort="manualSort"
 				v-model:headers="headers"
+				v-model="selection"
 				:class="{ 'no-last-border': totalItemCount <= 10 }"
 				:loading="loading"
 				:show-manual-sort="allowDrag"
 				:manual-sort-key="relationInfo?.sortField"
 				:items="displayItems"
 				:row-height="tableRowHeight"
+				:show-select="updateAllowed ? 'multiple' : 'none'"
+				selection-use-keys
 				show-resize
 				@click:row="editRow"
 				@update:items="sortItems"
@@ -578,6 +602,13 @@ function getLinkForItem(item: DisplayItem) {
 			:filter="customFilter"
 			multiple
 			@input="select"
+		/>
+
+		<drawer-batch
+			v-model:active="batchEditActive"
+			:primary-keys="selection"
+			:collection="relationInfo.relatedCollection.collection"
+			@refresh="batchRefresh"
 		/>
 	</div>
 </template>
