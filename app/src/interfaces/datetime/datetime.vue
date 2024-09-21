@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { localizedFormat } from '@/utils/localized-format';
+import { adjustDate } from '@directus/utils';
 import { isValid, parse, parseISO } from 'date-fns';
-import { computed, ref, watch } from 'vue';
+import { get } from 'lodash';
+import { computed, ComputedRef, inject, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(
@@ -11,6 +13,8 @@ const props = withDefaults(
 		disabled?: boolean;
 		includeSeconds?: boolean;
 		use24?: boolean;
+		minField?: string
+		maxField?: string
 	}>(),
 	{
 		use24: true,
@@ -22,6 +26,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const values = inject('values') as ComputedRef<Record<string, any>>;
+const min = useDateFieldOrDynamic(props.minField);
+const max = useDateFieldOrDynamic(props.maxField);
 
 const dateTimeMenu = ref();
 
@@ -70,6 +77,24 @@ function unsetValue(e: any) {
 	e.stopPropagation();
 	emit('input', null);
 }
+
+function useDateFieldOrDynamic(value?: string) {
+	if (!value) return undefined;
+
+	return computed(() => {
+		if (value.startsWith('$NOW')) {
+			if (value.includes('(') && value.includes(')')) {
+				const adjustment = value.match(/\(([^)]+)\)/)?.[1];
+				if (!adjustment) return new Date();
+				return adjustDate(new Date(), adjustment);
+			}
+
+			return new Date();
+		}
+
+		return get(values.value, value, '');
+	})
+}
 </script>
 
 <template>
@@ -100,6 +125,8 @@ function unsetValue(e: any) {
 			:include-seconds="includeSeconds"
 			:use-24="use24"
 			:model-value="value"
+			:min="min"
+			:max="max"
 			@update:model-value="$emit('input', $event)"
 			@close="dateTimeMenu?.deactivate"
 		/>
