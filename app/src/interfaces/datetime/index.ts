@@ -2,6 +2,7 @@ import { defineInterface } from '@directus/extensions';
 import type { DeepPartial, Field } from '@directus/types';
 import InterfaceDateTime from './datetime.vue';
 import PreviewSVG from './preview.svg?raw';
+import { useFieldsStore } from '@/stores/fields';
 
 export default defineInterface({
 	id: 'datetime',
@@ -11,7 +12,7 @@ export default defineInterface({
 	component: InterfaceDateTime,
 	types: ['dateTime', 'date', 'time', 'timestamp'],
 	group: 'selection',
-	options: ({ field }) => {
+	options: ({ field, collection }) => {
 		const options = field.meta?.options || {};
 
 		const fields: DeepPartial<Field>[] = [
@@ -139,7 +140,61 @@ export default defineInterface({
 			);
 		}
 
-		return fields;
+		const opts: DeepPartial<Field>[] = [];
+		const allowedTypes = ['dateTime', 'date', 'time', 'timestamp'];
+
+		if (collection) {
+			const fieldsStore = useFieldsStore();
+
+			const choices: { text: string; value: string }[] = [];
+
+			fieldsStore.getFieldsForCollection(collection).forEach((otherField) => {
+				if (allowedTypes.includes(otherField.type) && otherField.field !== field.field) {
+					choices.push({
+						text: otherField.name,
+						value: otherField.field,
+					});
+				}
+			});
+
+			opts.push(
+				{
+					field: 'minField',
+					name: `Min field/value`,
+					type: 'string',
+					meta: {
+						width: 'half',
+						interface: 'select-dropdown',
+						note: 'Select a field to use as the minimum value, or specify a $NOW() function.',
+						options: {
+							choices,
+							showDeselect: true,
+							allowOther: true,
+						},
+					},
+				},
+				{
+					field: 'maxField',
+					name: `Max field/value`,
+					type: 'string',
+					meta: {
+						width: 'half',
+						interface: 'select-dropdown',
+						note: 'Select a field to use as the maxiumum value, or specify a $NOW() function.',
+						options: {
+							choices,
+							showDeselect: true,
+							allowOther: true,
+						},
+					},
+				}
+			);
+		}
+
+		return {
+			standard: fields,
+			advanced: opts,
+		}
 	},
 	recommendedDisplays: ['datetime'],
 	preview: PreviewSVG,
