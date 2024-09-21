@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { isValid } from 'date-fns';
-import { computed, ref } from 'vue';
-import { parseDate } from '@/utils/parse-date';
 import UseDatetime, { type Props as UseDatetimeProps } from '@/components/use-datetime.vue';
+import { parseDate } from '@/utils/parse-date';
+import { adjustDate } from '@directus/utils';
+import { isValid } from 'date-fns';
+import { get } from 'lodash';
+import { computed, ComputedRef, inject, ref } from 'vue';
 
 interface Props extends Omit<UseDatetimeProps, 'value'> {
 	value: string | null;
 	disabled?: boolean;
 	nonEditable?: boolean;
+	minField?: string
+	maxField?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,6 +27,10 @@ const emit = defineEmits<{
 	(e: 'input', value: string | null): void;
 }>();
 
+const values = inject('values') as ComputedRef<Record<string, any>>;
+const min = useDateFieldOrDynamic(props.minField);
+const max = useDateFieldOrDynamic(props.maxField);
+
 const dateTimeMenu = ref();
 
 const isValidValue = computed(() => (props.value ? isValid(parseDate(props.value, props.type)) : false));
@@ -31,6 +39,24 @@ function unsetValue(e: any) {
 	e.preventDefault();
 	e.stopPropagation();
 	emit('input', null);
+}
+
+function useDateFieldOrDynamic(value?: string) {
+	if (!value) return undefined;
+
+	return computed(() => {
+		if (value.startsWith('$NOW')) {
+			if (value.includes('(') && value.includes(')')) {
+				const adjustment = value.match(/\(([^)]+)\)/)?.[1];
+				if (!adjustment) return new Date();
+				return adjustDate(new Date(), adjustment);
+			}
+
+			return new Date();
+		}
+
+		return get(values.value, value, '');
+	})
 }
 </script>
 
@@ -63,6 +89,8 @@ function unsetValue(e: any) {
 			:include-seconds
 			:use-24
 			:model-value="value"
+			:min="min"
+			:max="max"
 			@update:model-value="$emit('input', $event)"
 			@close="dateTimeMenu?.deactivate"
 		/>
