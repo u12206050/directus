@@ -190,6 +190,7 @@ function emitValue() {
 				class="icon-search"
 				:clickable="!active"
 				@click="input?.focus()"
+				@dblclick="promptOpen = true"
 			/>
 			<input
 				ref="input"
