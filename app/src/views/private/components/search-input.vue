@@ -2,7 +2,7 @@
 import { useElementSize } from '@directus/composables';
 import { Filter } from '@directus/types';
 import { isObject } from 'lodash';
-import { Ref, computed, inject, onMounted, ref, watch } from 'vue';
+import { Ref, computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const props = withDefaults(
@@ -61,7 +61,51 @@ watch(
 
 onMounted(() => {
 	if (active.value) input.value?.focus();
+
+	document.addEventListener('keydown', onKeyDown);
 });
+
+onUnmounted(() => {
+	document.removeEventListener('keydown', onKeyDown);
+});
+
+const promptOpen = ref(false);
+const prompt = ref('');
+const loading = ref(false);
+
+function onKeyDown(event: KeyboardEvent) {
+	if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+		event.preventDefault();
+
+		promptOpen.value = true;
+	}
+}
+
+async function onPrompt() {
+	promptOpen.value = false;
+	const query = (prompt.value || '').trim();
+
+	if (!query) return;
+
+	loading.value = true;
+
+	const res = await fetch("/ai/assist", {
+		"headers": {
+			"accept": "*/*",
+			"content-type": "application/json",
+		},
+		"body": JSON.stringify({ query, collection: props.collection }),
+		"method": "POST",
+		"mode": "cors",
+		"credentials": "include"
+	}).then(r => r.json()).catch(() => ({ success: false }));
+
+	if (res.success) {
+		emit('update:filter', res.data);
+	}
+
+	loading.value = false;
+}
 
 const activeFilterCount = computed(() => {
 	if (!props.filter) return 0;
@@ -141,7 +185,9 @@ function emitValue() {
 			role="search"
 			@click="activate"
 		>
+			<v-progress-circular v-if="loading" indeterminate small class="icon-search"/>
 			<v-icon
+				v-else
 				v-tooltip.bottom="!active ? t('search') : undefined"
 				name="search"
 				class="icon-search"
@@ -189,6 +235,23 @@ function emitValue() {
 				</transition-expand>
 			</template>
 		</div>
+
+		<v-dialog v-model="promptOpen">
+			<v-card>
+				<v-card-title>What do you want to filter for?</v-card-title>
+				<v-card-text>
+					<div class="grid">
+						<div class="field">
+							<v-input v-model="prompt" placeholder="query…" autofocus></v-input>
+						</div>
+					</div>
+				</v-card-text>
+				<v-card-actions>
+					<v-button secondary @click="promptOpen = false">{{ t('cancel') }}</v-button>
+					<v-button :disabled="!prompt" @click="onPrompt">{{ t('submit') }}</v-button>
+				</v-card-actions>
+			</v-card>
+		</v-dialog>
 	</v-badge>
 </template>
 
