@@ -28,6 +28,7 @@ const props = withDefaults(
 		enableSelect?: boolean;
 		loading?: boolean;
 		enableLink?: boolean;
+		placeholder?: string;
 	}>(),
 	{
 		value: null,
@@ -186,7 +187,7 @@ function getLinkForItem() {
 		<v-input
 			v-else
 			clickable
-			:placeholder="t(enableSelect ? 'select_an_item' : 'create_item')"
+			:placeholder="placeholder || t(enableSelect ? 'select_an_item' : 'create_item')"
 			:disabled="disabled"
 			@click="onPreviewClick"
 		>
