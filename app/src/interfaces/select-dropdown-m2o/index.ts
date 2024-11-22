@@ -79,6 +79,18 @@ export default defineInterface({
 					width: 'half',
 				},
 			},
+			{
+				field: 'placeholder',
+				name: '$t:placeholder',
+				type: 'string',
+				meta: {
+					width: 'half',
+					interface: 'input',
+					options: {
+						placeholder: '$t:enter_a_placeholder',
+					},
+				},
+			},
 		];
 	},
 	recommendedDisplays: ['related-values'],
