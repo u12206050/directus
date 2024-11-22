@@ -4,6 +4,7 @@ import { useRelationPermissionsM2O } from '@/composables/use-relation-permission
 import { RelationQuerySingle, useRelationSingle } from '@/composables/use-relation-single';
 import { useCollectionsStore } from '@/stores/collections';
 import { adjustFieldsForDisplays } from '@/utils/adjust-fields-for-displays';
+import { getItemRoute } from '@/utils/get-route';
 import { parseFilter } from '@/utils/parse-filter';
 import DrawerCollection from '@/views/private/components/drawer-collection.vue';
 import DrawerItem from '@/views/private/components/drawer-item.vue';
@@ -12,7 +13,6 @@ import { deepMap, getFieldsFromTemplate } from '@directus/utils';
 import { get } from 'lodash';
 import { render } from 'micromustache';
 import { computed, inject, ref, toRefs } from 'vue';
-import { getItemRoute } from '@/utils/get-route';
 
 const props = withDefaults(
 	defineProps<{
@@ -28,6 +28,7 @@ const props = withDefaults(
 		enableSelect?: boolean;
 		loading?: boolean;
 		enableLink?: boolean;
+		placeholder?: string;
 	}>(),
 	{
 		value: null,
@@ -193,7 +194,7 @@ function getLinkForItem() {
 					:template="displayTemplate"
 				/>
 			</div>
-			<div v-else class="placeholder">{{ $t(enableSelect ? 'select_an_item' : 'create_item') }}</div>
+			<div v-else class="placeholder">{{ placeholder || $t(enableSelect ? 'select_an_item' : 'create_item') }}</div>
 
 			<div class="spacer" />
 
