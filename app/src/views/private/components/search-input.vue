@@ -246,7 +246,11 @@ function emitValue() {
 				<v-card-text>
 					<div class="grid">
 						<div class="field">
-							<v-input v-model="prompt" placeholder="query…" autofocus></v-input>
+							<v-input
+								v-model="prompt" placeholder="query…" autofocus
+								@keydown.enter.prevent="onPrompt"
+								@keydown.esc.prevent="promptOpen = false"
+							/>
 						</div>
 					</div>
 				</v-card-text>
