@@ -16,7 +16,7 @@ import { flatten } from 'flat';
 import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import type { Client } from 'openid-client';
-import { errors, generators, Issuer } from 'openid-client';
+import { errors, generators, Issuer, type IssuerMetadata } from 'openid-client';
 import { getAuthProvider } from '../../auth.js';
 import { REFRESH_COOKIE_OPTIONS, SESSION_COOKIE_OPTIONS } from '../../constants.js';
 import getDatabase from '../../database/index.js';
@@ -36,6 +36,7 @@ import { isLoginRedirectAllowed } from '../../utils/is-login-redirect-allowed.js
 import { verifyJWT } from '../../utils/jwt.js';
 import { Url } from '../../utils/url.js';
 import { LocalAuthDriver } from './local.js';
+import { setSystemCache, getSystemCache } from '../../cache.js';
 
 export class OpenIDAuthDriver extends LocalAuthDriver {
 	client: Promise<Client>;
@@ -92,8 +93,20 @@ export class OpenIDAuthDriver extends LocalAuthDriver {
 		}
 
 		this.client = new Promise((resolve, reject) => {
-			Issuer.discover(issuerUrl)
-				.then((issuer) => {
+			(async () => {
+				try {
+					const cacheKey = `openid-issuer-${issuerUrl}`;
+					const cachedIssuerData = await getSystemCache(cacheKey) as IssuerMetadata;
+
+					let issuer: Issuer;
+
+					if (cachedIssuerData) {
+						issuer = new Issuer(cachedIssuerData);
+					} else {
+						issuer = await Issuer.discover(issuerUrl);
+						await setSystemCache(cacheKey, issuer.metadata, 86_400_000 * 7);
+					}
+
 					const supportedTypes = issuer.metadata['response_types_supported'] as string[] | undefined;
 
 					if (!supportedTypes?.includes('code')) {
@@ -115,11 +128,11 @@ export class OpenIDAuthDriver extends LocalAuthDriver {
 							...clientOptionsOverrides,
 						}),
 					);
-				})
-				.catch((e) => {
+				} catch (e) {
 					logger.error(e, '[OpenID] Failed to fetch provider config');
 					process.exit(1);
-				});
+				}
+			})();
 		});
 	}
 
