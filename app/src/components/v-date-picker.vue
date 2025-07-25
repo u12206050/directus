@@ -11,8 +11,8 @@ interface Props {
 	disabled?: boolean;
 	includeSeconds?: boolean;
 	use24?: boolean;
-  min?: string;
-  max?: string;
+	min?: string;
+	max?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,8 +20,8 @@ const props = withDefaults(defineProps<Props>(), {
 	disabled: false,
 	includeSeconds: false,
 	use24: true,
-  min: '',
-  max: '',
+	min: '',
+	max: '',
 });
 
 const emit = defineEmits<{ 'update:modelValue': [value: string | null]; close: [] }>();
