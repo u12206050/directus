@@ -95,36 +95,44 @@ async function onSubmit() {
 		loggingIn.value = false;
 	}
 }
+
+const showForm = ref(false);
 </script>
 
 <template>
-	<form novalidate @submit.prevent="onSubmit">
-		<v-input v-model="email" autofocus autocomplete="username" type="email" :placeholder="$t('email')" />
-		<interface-system-input-password :value="password" autocomplete="current-password" @input="password = $event" />
+	<transition name="fade">
+		<v-button v-if="!showForm" full-width @click="showForm = true">
+			<v-icon name="alternate_email" left />
+			{{ $t('log_in_with', { provider: $t('email') }) }}
+		</v-button>
+		<form v-else novalidate @submit.prevent="onSubmit">
+			<v-input v-model="email" autofocus autocomplete="username" type="email" :placeholder="$t('email')" />
+			<interface-system-input-password :value="password" autocomplete="current-password" @input="password = $event" />
 
-		<transition-expand>
-			<v-input
-				v-if="requiresTFA"
-				v-model="otp"
-				type="text"
-				autocomplete="one-time-code"
-				:placeholder="$t('otp')"
-				autofocus
-			/>
-		</transition-expand>
+			<transition-expand>
+				<v-input
+					v-if="requiresTFA"
+					v-model="otp"
+					type="text"
+					autocomplete="one-time-code"
+					:placeholder="$t('otp')"
+					autofocus
+				/>
+			</transition-expand>
 
-		<v-notice v-if="error" type="warning">
-			{{ errorFormatted }}
-		</v-notice>
-		<div class="buttons">
-			<v-button class="sign-in" type="submit" :loading="loggingIn" large>
-				<v-text-overflow :text="$t('sign_in')" />
-			</v-button>
-			<router-link to="/reset-password" class="forgot-password">
-				{{ $t('forgot_password') }}
-			</router-link>
-		</div>
-	</form>
+			<v-notice v-if="error" type="warning">
+				{{ errorFormatted }}
+			</v-notice>
+			<div class="buttons">
+				<v-button class="sign-in" type="submit" :loading="loggingIn" large>
+					<v-text-overflow :text="$t('sign_in')" />
+				</v-button>
+				<router-link to="/reset-password" class="forgot-password">
+					{{ $t('forgot_password') }}
+				</router-link>
+			</div>
+		</form>
+	</transition>
 </template>
 
 <style lang="scss" scoped>
