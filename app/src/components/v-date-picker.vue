@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getFlatpickrLocale } from '@/utils/get-flatpickr-locale';
-import { format } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import Flatpickr from 'flatpickr';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -57,6 +57,130 @@ onBeforeUnmount(() => {
 	}
 });
 
+const handleEnterNavigation = (currentElement: HTMLElement | null, instance: Flatpickr.Instance) => {
+	const { hourElement, minuteElement, secondElement, amPM } = instance;
+	const navSequence: HTMLElement[] = [];
+
+	if (hourElement) navSequence.push(hourElement);
+	if (minuteElement) navSequence.push(minuteElement);
+	if (props.includeSeconds && secondElement) navSequence.push(secondElement);
+	if (!props.use24 && amPM) navSequence.push(amPM);
+
+	if (!currentElement) {
+		
+		if (navSequence.length > 0) {
+			navSequence[0]!.focus();
+			if ('select' in navSequence[0]!) (navSequence[0]! as HTMLInputElement).select();
+		}
+
+		return;
+	}
+
+	if (currentElement) {
+		const inputEvent = new Event('input', { bubbles: true });
+		currentElement.dispatchEvent(inputEvent);
+	}
+
+	const currentIndex = navSequence.findIndex((el) => el === currentElement);
+
+	if (currentIndex < navSequence.length - 1) {		
+		setTimeout(() => {
+			const nextElement = navSequence[currentIndex + 1];
+			if (!nextElement) return;
+			nextElement.focus();
+			if ('select' in nextElement) (nextElement as HTMLInputElement).select();
+		}, 10);
+	} else {
+		setTimeout(() => {
+			const blurEvent = new Event('blur', { bubbles: true });
+			currentElement.dispatchEvent(blurEvent);
+
+			setTimeout(() => {
+				emit('close');
+			}, 50);
+		}, 10);
+	}
+};
+
+const handlePaste = async (event: KeyboardEvent): Promise<void> => {
+	if (!(event.ctrlKey || event.metaKey) || event.key !== 'v') return;
+	event.preventDefault();
+
+	try {
+		const clipboardText = (await navigator.clipboard.readText()).trim();
+
+		if (!clipboardText) return;
+
+		let parsedDate: Date | null = null;
+
+		switch (props.type) {
+			case 'dateTime':
+				parsedDate = parse(clipboardText, "yyyy-MM-dd'T'HH:mm:ss", new Date());
+				break;
+			case 'date':
+				parsedDate = parse(clipboardText, 'yyyy-MM-dd', new Date());
+				break;
+			case 'time':
+				parsedDate = parse(clipboardText, 'HH:mm:ss', new Date());
+				break;
+			case 'timestamp':
+				parsedDate = parseISO(clipboardText);
+				break;
+		}
+		
+		if (parsedDate) {
+			emitValue(parsedDate);
+
+			setTimeout(() => {
+				emit('close');
+			}, 50);
+		}
+	} catch {
+		return;
+	}
+};
+
+const handleCopy = async (event: KeyboardEvent) => {
+	if (!(event.ctrlKey || event.metaKey) || event.key !== 'c') return;
+	if (!flatpickr || !flatpickr.selectedDates || flatpickr.selectedDates.length === 0) return;
+
+	event.preventDefault();
+
+	const selectedDate = flatpickr.selectedDates[0];
+	if (!selectedDate) return;
+
+	let formattedValue = '';
+
+	switch (props.type) {
+		case 'dateTime':
+			formattedValue = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
+			break;
+		case 'date':
+			formattedValue = format(selectedDate, 'yyyy-MM-dd');
+			break;
+		case 'time':
+			formattedValue = format(selectedDate, 'HH:mm:ss');
+			break;
+		case 'timestamp':
+			formattedValue = selectedDate.toISOString();
+			break;
+	}
+
+	if (formattedValue) {
+		await navigator.clipboard.writeText(formattedValue);
+	}
+};
+
+function attachEnterEvent(element: HTMLElement, instance: Flatpickr.Instance) {
+	element.addEventListener('keydown', (event: KeyboardEvent) => {
+		if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
+			event.preventDefault();
+			event.stopPropagation();
+			handleEnterNavigation(element, instance);
+		}
+	});
+}
+
 const defaultOptions = {
 	static: true,
 	inline: true,
@@ -82,13 +206,35 @@ const defaultOptions = {
 		setToNowButton.addEventListener('click', setToNow);
 		instance.calendarContainer.appendChild(setToNowButton);
 
-		if (!props.use24) {
-			instance.amPM?.addEventListener('keyup', enterToClose);
-		} else if (props.includeSeconds) {
-			instance.secondElement?.addEventListener('keyup', enterToClose);
-		} else {
-			instance.minuteElement?.addEventListener('keyup', enterToClose);
+		instance.calendarContainer.addEventListener('keydown', handlePaste);
+		instance.calendarContainer.addEventListener('keydown', handleCopy);
+
+		if (instance.hourElement) {
+			attachEnterEvent(instance.hourElement, instance);
 		}
+
+		if (instance.minuteElement) {
+			attachEnterEvent(instance.minuteElement, instance);
+		}
+
+		if (props.includeSeconds && instance.secondElement) {
+			attachEnterEvent(instance.secondElement, instance);
+		}
+
+		if (!props.use24 && instance.amPM) {
+			attachEnterEvent(instance.amPM, instance);
+		}
+
+		if (instance.daysContainer) {
+			attachEnterEvent(instance.daysContainer, instance);
+		}
+
+		setTimeout(() => {
+			if (['dateTime', 'time', 'timestamp'].includes(props.type) && instance.hourElement) {
+				instance.hourElement.focus();
+				if ('select' in instance.hourElement) (instance.hourElement as HTMLInputElement).select();
+			}
+		}, 150);
 	},
 };
 
@@ -129,12 +275,6 @@ function emitValue(value: Date | null) {
 
 function setToNow() {
 	flatpickr?.setDate(new Date(), true);
-}
-
-function enterToClose(e: any) {
-	if (e.key !== 'Enter') return;
-	flatpickr?.close();
-	emit('close');
 }
 </script>
 
