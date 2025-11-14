@@ -86,16 +86,18 @@ async function onPrompt() {
 
 	loading.value = true;
 
-	const res = await fetch("/ai/assist", {
-		"headers": {
-			"accept": "*/*",
-			"content-type": "application/json",
+	const res = await fetch('/ai/assist', {
+		headers: {
+			accept: '*/*',
+			'content-type': 'application/json',
 		},
-		"body": JSON.stringify({ query, collection: props.collection }),
-		"method": "POST",
-		"mode": "cors",
-		"credentials": "include"
-	}).then(r => r.json()).catch(() => ({ success: false }));
+		body: JSON.stringify({ query, collection: props.collection }),
+		method: 'POST',
+		mode: 'cors',
+		credentials: 'include',
+	})
+		.then((r) => r.json())
+		.catch(() => ({ success: false }));
 
 	if (res.success) {
 		emit('update:filter', res.data);
@@ -182,7 +184,7 @@ function emitValue() {
 			role="search"
 			@click="activate"
 		>
-			<v-progress-circular v-if="loading" indeterminate small class="icon-search"/>
+			<v-progress-circular v-if="loading" indeterminate small class="icon-search" />
 			<v-icon
 				v-else
 				v-tooltip.bottom="!active ? $t('search') : undefined"
@@ -247,7 +249,9 @@ function emitValue() {
 					<div class="grid">
 						<div class="field">
 							<v-input
-								v-model="prompt" placeholder="query…" autofocus
+								v-model="prompt"
+								placeholder="query…"
+								autofocus
 								@keydown.enter.prevent="onPrompt"
 								@keydown.esc.prevent="promptOpen = false"
 							/>
@@ -255,8 +259,8 @@ function emitValue() {
 					</div>
 				</v-card-text>
 				<v-card-actions>
-					<v-button secondary @click="promptOpen = false">{{ t('cancel') }}</v-button>
-					<v-button :disabled="!prompt" @click="onPrompt">{{ t('submit') }}</v-button>
+					<v-button secondary @click="promptOpen = false">{{ $t('cancel') }}</v-button>
+					<v-button :disabled="!prompt" @click="onPrompt">{{ $t('submit') }}</v-button>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
