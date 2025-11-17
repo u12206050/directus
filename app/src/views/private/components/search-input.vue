@@ -2,7 +2,7 @@
 import { useElementSize } from '@directus/composables';
 import { Filter } from '@directus/types';
 import { isObject } from 'lodash';
-import { Ref, computed, inject, onMounted, ref, watch } from 'vue';
+import { Ref, computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = withDefaults(
 	defineProps<{
