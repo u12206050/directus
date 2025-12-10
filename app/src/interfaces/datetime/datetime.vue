@@ -36,73 +36,10 @@ const dateTimeMenu = ref();
 const isValidValue = computed(() => (props.value ? isValid(parseDate(props.value, props.type)) : false));
 
 /**
- * Converts a UTC ISO string to show what it looks like in the target timezone (for date-picker display).
- * This "unconverts" the UTC value so the date-picker shows the correct time in the selected timezone.
- */
-function convertUTCToTimezoneForDisplay(isoValue: string | null, timezone: string | null): string | null {
-	if (!isoValue || !timezone || props.type !== 'timestamp') {
-		return isoValue;
-	}
-
-	try {
-		const utcDate = parseISO(isoValue);
-
-		if (!isValid(utcDate)) return isoValue;
-
-		// Get what this UTC time looks like in the target timezone
-		const formatter = new Intl.DateTimeFormat('en-US', {
-			timeZone: timezone,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: false,
-		});
-
-		const parts = formatter.formatToParts(utcDate);
-		const partsMap: Record<string, string> = {};
-
-		for (const part of parts) {
-			partsMap[part.type] = part.value;
-		}
-
-		// Create a date string with these components (interpreted as local time)
-		const year = parseInt(partsMap.year!);
-		const month = parseInt(partsMap.month!) - 1;
-		const day = parseInt(partsMap.day!);
-		const hour = parseInt(partsMap.hour!);
-		const minute = parseInt(partsMap.minute!);
-		const second = parseInt(partsMap.second!);
-
-		// Calculate the difference between what we want and what we got
-		const actualTime = new Date(
-			parseInt(partsMap.year!),
-			parseInt(partsMap.month!) - 1,
-			parseInt(partsMap.day!),
-			parseInt(partsMap.hour!),
-			parseInt(partsMap.minute!),
-			parseInt(partsMap.second!),
-		).getTime();
-
-		const desiredTime = new Date(year, month, day, hour, minute, second).getTime();
-		const diffMs = desiredTime - actualTime;
-
-		// Adjust the UTC date by the difference
-		const adjustedUtc = new Date(desiredUtc.getTime() - diffMs);
-
-		return adjustedUtc.toISOString();
-	} catch {
-		return isoValue;
-	}
-}
-
-/**
  * Converts a date-picker ISO value (which represents time in selected timezone) back to UTC.
  * The date-picker emits an ISO string, but we need to interpret it as being in the selected timezone.
  */
-function convertDatePickerValueToUTC(isoValue: string | null, timezone: string | null, toUTC = true): string | null {
+function convertDateBetweenTZorUTC(isoValue: string | null, timezone: string | null, toUTC = true): string | null {
 	if (!isoValue || !timezone || props.type !== 'timestamp') {
 		return isoValue;
 	}
@@ -175,7 +112,7 @@ const tzValue = computed({
 	get() {
 		// Convert UTC value to timezone-adjusted value for date-picker display
 		if (props.type === 'timestamp' && props.tz && props.value) {
-			return convertDatePickerValueToUTC(props.value, props.tz, false) || '';
+			return convertDateBetweenTZorUTC(props.value, props.tz, false) || '';
 		}
 
 		return props.value || '';
@@ -188,7 +125,7 @@ const tzValue = computed({
 
 		// Convert date-picker value back to UTC considering the selected timezone
 		if (props.type === 'timestamp' && props.tz) {
-			const adjustedValue = convertDatePickerValueToUTC(value, props.tz);
+			const adjustedValue = convertDateBetweenTZorUTC(value, props.tz);
 			emit('input', adjustedValue);
 			return;
 		}
