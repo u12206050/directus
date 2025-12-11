@@ -1,8 +1,8 @@
 import { formatDate, FormatDateOptions } from '@/utils/format-date';
+import { getTimezoneOptions } from '@/utils/timezones';
 import { defineDisplay } from '@directus/extensions';
 import type { DeepPartial, Field } from '@directus/types';
 import DisplayDateTime from './datetime.vue';
-import { getTimeZoneOptions } from './timezones';
 
 export default defineDisplay({
 	id: 'datetime',
@@ -99,7 +99,7 @@ export default defineDisplay({
 						interface: 'select-dropdown',
 						width: 'half',
 						options: {
-							choices: getTimeZoneOptions(),
+							choices: getTimezoneOptions(),
 							allowOther: true,
 						},
 						note: '$t:displays.datetime.timezone_note',

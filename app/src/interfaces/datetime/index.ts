@@ -1,9 +1,9 @@
 import { useFieldsStore } from '@/stores/fields';
+import { getTimezoneOptions } from '@/utils/timezones';
 import { defineInterface } from '@directus/extensions';
 import type { DeepPartial, Field } from '@directus/types';
 import InterfaceDateTime from './datetime.vue';
 import PreviewSVG from './preview.svg?raw';
-import { getTimeZoneOptions } from './timezones';
 
 export default defineInterface({
 	id: 'datetime',
@@ -94,7 +94,7 @@ export default defineInterface({
 						interface: 'select-dropdown',
 						width: 'full',
 						options: {
-							choices: getTimeZoneOptions(),
+							choices: getTimezoneOptions(),
 							allowOther: true,
 						},
 						note: '$t:displays.datetime.timezone_note',

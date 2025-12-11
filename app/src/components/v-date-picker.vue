@@ -67,7 +67,6 @@ const handleEnterNavigation = (currentElement: HTMLElement | null, instance: Fla
 	if (!props.use24 && amPM) navSequence.push(amPM);
 
 	if (!currentElement) {
-		
 		if (navSequence.length > 0) {
 			navSequence[0]!.focus();
 			if ('select' in navSequence[0]!) (navSequence[0]! as HTMLInputElement).select();
@@ -83,7 +82,7 @@ const handleEnterNavigation = (currentElement: HTMLElement | null, instance: Fla
 
 	const currentIndex = navSequence.findIndex((el) => el === currentElement);
 
-	if (currentIndex < navSequence.length - 1) {		
+	if (currentIndex < navSequence.length - 1) {
 		setTimeout(() => {
 			const nextElement = navSequence[currentIndex + 1];
 			if (!nextElement) return;
@@ -127,7 +126,7 @@ const handlePaste = async (event: KeyboardEvent): Promise<void> => {
 				parsedDate = parseISO(clipboardText);
 				break;
 		}
-		
+
 		if (parsedDate) {
 			emitValue(parsedDate);
 
