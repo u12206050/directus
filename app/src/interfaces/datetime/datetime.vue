@@ -45,14 +45,15 @@ function unsetValue(e: any) {
 // Computed property for date-picker value with timezone conversion
 const tzValue = computed({
 	get() {
-		const date = parseISO(props.value);
+		const dateStr = props.value || '';
+		const date = parseISO(dateStr);
 
 		// Convert UTC value to timezone-adjusted value for date-picker display
 		if (isValid(date) && props.type === 'timestamp' && props.tz && props.value) {
 			return formatDateToTimezone(date, props.tz).toISOString();
 		}
 
-		return props.value || '';
+		return dateStr;
 	},
 	set(value: string | null) {
 		if (!value) {
