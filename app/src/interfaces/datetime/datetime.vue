@@ -106,7 +106,7 @@ function useDateFieldOrDynamic(value?: string) {
 				<div class="spacer" />
 
 				<template v-if="!disabled">
-					<v-icon v-if="tz" v-tooltip="tz" name="schedule" class="timezone-icon" />
+					<v-icon v-if="tz" v-tooltip="tz" small name="schedule" class="timezone-icon" />
 
 					<v-icon
 						:name="value ? 'clear' : 'today'"
