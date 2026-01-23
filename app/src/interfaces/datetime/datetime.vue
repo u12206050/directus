@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { isValid } from 'date-fns';
-import { computed, ref } from 'vue';
+import { isValid, parseISO } from 'date-fns';
+import { computed, ComputedRef, inject, ref } from 'vue';
 import UseDatetime, { type Props as UseDatetimeProps } from '@/components/use-datetime.vue';
 import VDatePicker from '@/components/v-date-picker.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -8,11 +8,17 @@ import VListItem from '@/components/v-list-item.vue';
 import VMenu from '@/components/v-menu.vue';
 import VRemove from '@/components/v-remove.vue';
 import { parseDate } from '@/utils/parse-date';
+import { formatDateToTimezone, getLocalTimezoneOffset } from '@/utils/timezones';
+import { adjustDate } from '@directus/utils';
+import { get } from 'lodash';
 
 interface Props extends Omit<UseDatetimeProps, 'value'> {
 	value: string | null;
 	disabled?: boolean;
 	nonEditable?: boolean;
+	minField?: string;
+	maxField?: string;
+	tz?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,14 +34,67 @@ const emit = defineEmits<{
 	(e: 'input', value: string | null): void;
 }>();
 
-const dateTimeMenu = ref();
+const values = inject('values') as ComputedRef<Record<string, any>>;
+const min = useDateFieldOrDynamic(props.minField);
+const max = useDateFieldOrDynamic(props.maxField);
 
+const dateTimeMenu = ref();
 const isValidValue = computed(() => (props.value ? isValid(parseDate(props.value, props.type)) : false));
 
 function unsetValue(e: any) {
 	e.preventDefault();
 	e.stopPropagation();
 	emit('input', null);
+}
+
+// Computed property for date-picker value with timezone conversion
+const tzValue = computed({
+	get() {
+		// Convert UTC value to timezone-adjusted value for date-picker display
+		if (props.type === 'timestamp' && props.tz && props.value) {
+			const date = parseISO(props.value);
+			if (!isValid(date)) return null;
+			return formatDateToTimezone(date, props.tz).toISOString();
+		}
+
+		return props.value;
+	},
+	set(value: string | null) {
+		if (!value) {
+			emit('input', null);
+			return;
+		}
+
+		// Convert date-picker value back to UTC considering the selected timezone
+		const date = parseISO(value);
+
+		if (isValid(date) && props.type === 'timestamp' && props.tz) {
+			const offset = getLocalTimezoneOffset(date, props.tz);
+			date.setHours(date.getHours() - offset);
+			emit('input', date.toISOString());
+			return;
+		}
+
+		emit('input', value);
+	},
+});
+
+function useDateFieldOrDynamic(value?: string) {
+	if (!value) return undefined;
+
+	return computed(() => {
+		if (value.startsWith('$NOW')) {
+			if (value.includes('(') && value.includes(')')) {
+				const adjustment = value.match(/\(([^)]+)\)/)?.[1];
+				if (!adjustment) return new Date();
+				return adjustDate(new Date(), adjustment);
+			}
+
+			return new Date();
+		}
+
+		return get(values.value, value, '');
+	});
 }
 </script>
 
@@ -51,21 +110,26 @@ function unsetValue(e: any) {
 
 				<div class="spacer" />
 
-				<div v-if="!nonEditable" class="item-actions">
-					<VRemove v-if="value" :disabled deselect class="clear-icon" @action="unsetValue($event)" />
+				<div class="item-actions">
+					<VIcon v-if="tz" v-tooltip="tz" name="schedule" class="timezone-icon" />
 
-					<VIcon v-else name="today" class="today-icon" :class="{ active, disabled }" />
+					<template v-if="!nonEditable">
+						<VRemove v-if="value" :disabled deselect class="clear-icon" @action="unsetValue($event)" />
+
+						<VIcon v-else name="today" class="today-icon" :class="{ active, disabled }" />
+					</template>
 				</div>
 			</VListItem>
 		</template>
 
 		<VDatePicker
+			v-model="tzValue"
 			:type
 			:disabled
 			:include-seconds
 			:use-24
-			:model-value="value"
-			@update:model-value="$emit('input', $event)"
+			:min="min"
+			:max="max"
 			@close="dateTimeMenu?.deactivate"
 		/>
 	</VMenu>
@@ -100,6 +164,12 @@ function unsetValue(e: any) {
 	&:hover,
 	&.active {
 		--v-icon-color: var(--theme--primary);
+	}
+
+	&.timezone-icon {
+		margin-inline-end: 4px;
+
+		--v-icon-color: var(--theme--secondary);
 	}
 }
 

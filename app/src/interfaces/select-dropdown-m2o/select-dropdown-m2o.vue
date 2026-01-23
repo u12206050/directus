@@ -35,6 +35,7 @@ const props = withDefaults(
 		enableSelect?: boolean;
 		loading?: boolean;
 		enableLink?: boolean;
+		placeholder?: string;
 	}>(),
 	{
 		value: null,
@@ -207,7 +208,7 @@ function getLinkForItem() {
 					:template="displayTemplate"
 				/>
 			</div>
-			<div v-else class="placeholder">{{ $t(enableSelect ? 'select_an_item' : 'create_item') }}</div>
+			<div v-else class="placeholder">{{ placeholder || $t(enableSelect ? 'select_an_item' : 'create_item') }}</div>
 
 			<div class="spacer" />
 

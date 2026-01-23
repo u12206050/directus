@@ -1911,6 +1911,8 @@ interfaces:
     all: All
     any: Any
     and: and
+    none: None
+    none_of_the_following: None of the following
     of_the_following: of the following
     no_rules: No configured rules
     change_value: Click to change value
@@ -2343,6 +2345,9 @@ displays:
     down: Down
     nearest: Nearest
     up: Up
+    timezone: Timezone
+    timezone_local: Local Timezone
+    timezone_note: IANA timezone identifier (e.g., 'America/New_York', 'UTC'). Leave empty to use local timezone.
   file:
     file: File
     description: Display files

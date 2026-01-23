@@ -13,7 +13,9 @@ withDefaults(defineProps<UseDatetimeProps>(), {
 
 <template>
 	<UseDatetime v-slot="{ datetime }" v-bind="$props">
-		<span class="datetime">{{ datetime }}</span>
+		<span v-tooltip.bottom="tz ? `${tz} \n ${new Date(value).toISOString()}` : undefined" class="datetime">
+			{{ datetime }}
+		</span>
 	</UseDatetime>
 </template>
 

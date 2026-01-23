@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import formatTitle from '@directus/format-title';
 import { DeepPartial, Field, FieldMeta } from '@directus/types';
-import { isEqual, sortBy } from 'lodash';
+import { cloneDeep, isEqual, sortBy } from 'lodash';
 import { computed, ref, toRefs } from 'vue';
 import Draggable from 'vuedraggable';
 import VButton from '@/components/v-button.vue';
@@ -172,6 +172,28 @@ function removeItem(item: Record<string, any>) {
 	}
 }
 
+function copyItem(item: Record<string, any>, index: number) {
+	if (!value.value || !Array.isArray(internalValue.value)) return;
+
+	// Check limit
+	if (props.limit !== undefined && internalValue.value.length >= props.limit) {
+		return;
+	}
+
+	// Create a deep copy of the item
+	const copiedItem = cloneDeep(item);
+
+	// Insert the copied item right after the original
+	const newValue = [...internalValue.value];
+	newValue.splice(index + 1, 0, copiedItem);
+
+	if (props.fields && props.sort) {
+		emitValue(sortBy(newValue, props.sort));
+	} else {
+		emitValue(newValue);
+	}
+}
+
 function addNew() {
 	isNewItem.value = true;
 
@@ -263,7 +285,14 @@ function closeDrawer() {
 					<div class="spacer" />
 
 					<div v-if="!nonEditable" class="item-actions">
-						<VRemove confirm :disabled @action="removeItem(element)" />
+						<VIcon
+							v-if="!disabled"
+							v-tooltip="$t('duplicate')"
+							name="content_copy"
+							clickable
+							@click.stop="copyItem(element, index)"
+						/>
+						<VRemove v-if="!disabled" confirm @action="removeItem(element)" />
 					</div>
 				</VListItem>
 			</template>

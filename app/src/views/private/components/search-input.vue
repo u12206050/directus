@@ -2,11 +2,19 @@
 import { useElementSize } from '@directus/composables';
 import { Filter } from '@directus/types';
 import { isObject } from 'lodash';
-import { computed, inject, onMounted, ref, Ref, watch } from 'vue';
+import { type Ref, computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import TransitionExpand from '@/components/transition/expand.vue';
 import VBadge from '@/components/v-badge.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import InterfaceSystemFilter from '@/interfaces/_system/system-filter/system-filter.vue';
+import VProgressCircular from '@/components/v-progress-circular.vue';
+import VDialog from '@/components/v-dialog.vue';
+import VCard from '@/components/v-card.vue';
+import VCardTitle from '@/components/v-card-title.vue';
+import VCardText from '@/components/v-card-text.vue';
+import VCardActions from '@/components/v-card-actions.vue';
+import VButton from '@/components/v-button.vue';
+import VInput from '@/components/v-input.vue';
 
 const props = withDefaults(
 	defineProps<{
@@ -63,7 +71,53 @@ watch(
 
 onMounted(() => {
 	if (active.value) input.value?.focus();
+
+	document.addEventListener('keydown', onKeyDown);
 });
+
+onUnmounted(() => {
+	document.removeEventListener('keydown', onKeyDown);
+});
+
+const promptOpen = ref(false);
+const prompt = ref('');
+const loading = ref(false);
+
+function onKeyDown(event: KeyboardEvent) {
+	if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+		event.preventDefault();
+
+		promptOpen.value = true;
+	}
+}
+
+async function onPrompt() {
+	promptOpen.value = false;
+	const query = (prompt.value || '').trim();
+
+	if (!query) return;
+
+	loading.value = true;
+
+	const res = await fetch('/ai/assist', {
+		headers: {
+			accept: '*/*',
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({ query, collection: props.collection }),
+		method: 'POST',
+		mode: 'cors',
+		credentials: 'include',
+	})
+		.then((r) => r.json())
+		.catch(() => ({ success: false }));
+
+	if (res.success) {
+		emit('update:filter', res.data);
+	}
+
+	loading.value = false;
+}
 
 const activeFilterCount = computed(() => {
 	if (!props.filter) return 0;
@@ -163,7 +217,16 @@ function emitValue() {
 			role="search"
 			@click="activate"
 		>
-			<VIcon small name="search" class="icon-search" :disabled :clickable="!active" @click="input?.focus()" />
+			<VProgressCircular v-if="loading" indeterminate small class="icon-search" />
+			<VIcon
+				v-else
+				v-tooltip.bottom="!active ? $t('search') : undefined"
+				name="search"
+				class="icon-search"
+				:clickable="!active"
+				@click="input?.focus()"
+				@dblclick="promptOpen = true"
+			/>
 			<input
 				ref="input"
 				:value="modelValue"
@@ -216,6 +279,29 @@ function emitValue() {
 				</TransitionExpand>
 			</template>
 		</div>
+
+		<VDialog v-model="promptOpen">
+			<VCard>
+				<VCardTitle>What do you want to filter for?</VCardTitle>
+				<VCardText>
+					<div class="grid">
+						<div class="field">
+							<VInput
+								v-model="prompt"
+								placeholder="query…"
+								autofocus
+								@keydown.enter.prevent="onPrompt"
+								@keydown.esc.prevent="promptOpen = false"
+							/>
+						</div>
+					</div>
+				</VCardText>
+				<VCardActions>
+					<VButton secondary @click="promptOpen = false">{{ $t('cancel') }}</VButton>
+					<VButton :disabled="!prompt" @click="onPrompt">{{ $t('submit') }}</VButton>
+				</VCardActions>
+			</VCard>
+		</VDialog>
 	</VBadge>
 </template>
 

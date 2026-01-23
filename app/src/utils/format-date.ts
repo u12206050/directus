@@ -3,6 +3,7 @@ import { localizedFormat } from '@/utils/localized-format';
 import { localizedFormatDistance } from '@/utils/localized-format-distance';
 import { localizedFormatDistanceStrict } from '@/utils/localized-format-distance-strict';
 import { parseDate } from '@/utils/parse-date';
+import { formatDateToTimezone } from '@/utils/timezones';
 
 export interface FormatDateOptions {
 	type: 'dateTime' | 'date' | 'time' | 'timestamp';
@@ -14,6 +15,8 @@ export interface FormatDateOptions {
 	suffix?: boolean;
 	includeSeconds?: boolean;
 	use24?: boolean;
+	/** IANA timezone identifier (e.g., 'America/New_York', 'Europe/London', 'UTC'). If not provided, uses local timezone. */
+	tz?: string;
 }
 
 /**
@@ -66,5 +69,14 @@ export function formatDate(value: string, options: FormatDateOptions) {
 		format = options.format;
 	}
 
-	return localizedFormat(parseDate(value, options.type), format);
+	const date = parseDate(value, options.type);
+
+	// If timezone is specified, adjust the date to display in that timezone
+	if (options.type === 'timestamp' && options.tz && options.tz.trim()) {
+		const adjustedDate = formatDateToTimezone(date, options.tz);
+
+		return localizedFormat(adjustedDate, format);
+	}
+
+	return localizedFormat(date, format);
 }

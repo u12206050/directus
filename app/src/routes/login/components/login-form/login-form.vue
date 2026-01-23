@@ -12,6 +12,7 @@ import VTextOverflow from '@/components/v-text-overflow.vue';
 import InterfaceSystemInputPassword from '@/interfaces/_system/system-input-password/input-password.vue';
 import { translateAPIError } from '@/lang';
 import { useUserStore } from '@/stores/user';
+import VIcon from '@/components/v-icon/v-icon.vue';
 
 type Credentials = {
 	email: string;
@@ -101,36 +102,44 @@ async function onSubmit() {
 		loggingIn.value = false;
 	}
 }
+
+const showForm = ref(false);
 </script>
 
 <template>
-	<form novalidate @submit.prevent="onSubmit">
-		<VInput v-model="email" autofocus autocomplete="username" type="email" :placeholder="$t('email')" />
-		<InterfaceSystemInputPassword :value="password" autocomplete="current-password" @input="password = $event" />
+	<transition name="fade">
+		<VButton v-if="!showForm" full-width @click="showForm = true">
+			<VIcon small name="alternate_email" left />
+			{{ $t('log_in_with', { provider: $t('email') }) }}
+		</VButton>
+		<form v-else novalidate @submit.prevent="onSubmit">
+			<VInput v-model="email" autofocus autocomplete="username" type="email" :placeholder="$t('email')" />
+			<InterfaceSystemInputPassword :value="password" autocomplete="current-password" @input="password = $event" />
 
-		<TransitionExpand>
-			<VInput
-				v-if="requiresTFA"
-				v-model="otp"
-				type="text"
-				autocomplete="one-time-code"
-				:placeholder="$t('otp')"
-				autofocus
-			/>
-		</TransitionExpand>
+			<TransitionExpand>
+				<VInput
+					v-if="requiresTFA"
+					v-model="otp"
+					type="text"
+					autocomplete="one-time-code"
+					:placeholder="$t('otp')"
+					autofocus
+				/>
+			</TransitionExpand>
 
-		<VNotice v-if="error" type="warning">
-			{{ errorFormatted }}
-		</VNotice>
-		<div class="buttons">
-			<VButton class="sign-in" type="submit" :loading="loggingIn" large>
-				<VTextOverflow :text="$t('sign_in')" />
-			</VButton>
-			<RouterLink to="/reset-password" class="forgot-password">
-				{{ $t('forgot_password') }}
-			</RouterLink>
-		</div>
-	</form>
+			<VNotice v-if="error" type="warning">
+				{{ errorFormatted }}
+			</VNotice>
+			<div class="buttons">
+				<VButton class="sign-in" type="submit" :loading="loggingIn" large>
+					<VTextOverflow :text="$t('sign_in')" />
+				</VButton>
+				<RouterLink to="/reset-password" class="forgot-password">
+					{{ $t('forgot_password') }}
+				</RouterLink>
+			</div>
+		</form>
+	</transition>
 </template>
 
 <style lang="scss" scoped>

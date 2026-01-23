@@ -1,3 +1,4 @@
+import InsightsDashboard from '@/modules/insights/routes/dashboard.vue';
 import { App } from 'vue';
 import TransitionBounce from './transition/bounce.vue';
 import TransitionDialog from './transition/dialog.vue';
@@ -157,4 +158,6 @@ export function registerComponents(app: App): void {
 	app.component('DrawerFiles', DrawerFiles);
 	app.component('DrawerItem', DrawerItem);
 	app.component('DrawerBatch', DrawerBatch);
+
+	app.component('InsightsDashboard', InsightsDashboard);
 }
