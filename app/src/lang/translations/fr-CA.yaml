@@ -485,6 +485,8 @@ related_collection: Collection associée
 related_collections: Collections associées
 translations_collection: Collection de traduction
 languages_collection: Collection de langues
+translations_preview_collections: Collections
+translations_preview_fields: Champs
 import_data_input_placeholder: CSV ou JSON...
 import_data_button: Commencer l'import
 import_data_indeterminate: Import des données...
@@ -665,7 +667,6 @@ no_collections: Aucune collection
 create_collection: Créer une collection
 no_collections_copy_admin: Vous n'avez pas encore de collection. Cliquez sur le bouton ci-dessous pour commencer.
 no_collections_copy: Vous n'avez pas encore de Collections. Veuillez contacter votre administrateur système.
-relationship_not_setup: La relation n'a pas été configurée correctement
 no_singleton_relations: Les relations avec les Singletons ne sont pas prises en charge
 display_template_not_setup: L'option d'affichage du modèle est mal configurée
 collection_field_not_setup: L'option de champ de collection est mal configurée
@@ -785,7 +786,6 @@ unexpected_error_copy: Une erreur inattendue est survenue. Veuillez réessayer.
 copy_details: Copier les détails
 no_app_access: Pas d'accès à l'application
 no_app_access_copy: Cet utilisateur n'est pas autorisé à utiliser l'application d'administration.
-password_reset_sent: Si vous avez un compte, nous vous avons envoyé un lien sécurisé pour réinitialiser votre mot de passe
 password_reset_successful: Mot de passe réinitialisé avec succès
 back: Retour
 filter: Filtre
@@ -992,6 +992,15 @@ no_url: Aucune URL fournie
 no_url_copy: Veuillez ajouter une URL dans les paramètres.
 invalid_url: URL invalide
 insights: Analyses
+deployment:
+  provider:
+    settings:
+      delete_confirm: Cette action est définitive et ne peut pas être annulée. Êtes-vous sûr de vouloir continuer ?
+    run:
+      cancel_confirm: Cette action est définitive et ne peut pas être annulée. Êtes-vous sûr de vouloir continuer ?
+      log_all: Tous les niveaux de log
+  target_value:
+    preview: Prévisualiser
 dashboard: Tableau de bord
 panel: Panneau
 panel_options: Options de panneau
@@ -1363,6 +1372,7 @@ fields:
     public_registration_email_filter_note: Seules les adresses e-mail correspondant à ce filtre peuvent s'inscrire.
     public_registration_verify_email: Vérifier l'adresse e-mail
     public_registration_verify_email_note: Envoie un e-mail à l'utilisateur qui vient de s'inscrire, lui demandant de cliquer sur un lien de vérification avant de pouvoir se connecter.
+    ai_header_name: En-tête
   directus_shares:
     name: Nom
     role: Rôle
@@ -1515,6 +1525,7 @@ live_preview:
   new_window: Ouvrir dans une nouvelle fenêtre
   close_window: Ouvrir en mode écran partagé
   toggle_3d: Alterner 3D
+  display_options: Options d’affichage
 shares: Partages
 unlimited_usage: Utilisation illimitée
 uses_left: Pas d'utilisation restante | Une utilisation restante | {n} utilisations restantes
@@ -1523,9 +1534,13 @@ new_share: Nouveau partage
 ai:
   input: Texte simple
   unknown: Inconnu
+  items: Éléments
+  content: Contenu
   settings: Réglages
   tool_approval:
     disabled: Désactivé
+  ask_user_submit: Envoyer
+  ask_user_next: Suivant
 ai_tools:
   items: Éléments
   files: Fichiers
@@ -1704,6 +1719,8 @@ interfaces:
     all_opened: Tous ouverts
     accordion_mode: Mode Accordion
     max_one_section_open: Max 1 section ouverte
+  group-tabs:
+    fill_width: Remplir l'espace
   presentation-links:
     presentation-links: Boutons
     style: Style
@@ -2478,3 +2495,4 @@ search_flow: Rechercher le flux...
 percent: Pourcent
 show_password: Afficher le mot de passe
 hide_password: Masquer le mot de passe
+set_to_now: Configurer à maintenant

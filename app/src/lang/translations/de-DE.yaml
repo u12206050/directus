@@ -471,6 +471,8 @@ related_collection: Verknüpfte Sammlung
 related_collections: Verwandte Sammlungen
 translations_collection: Übersetzungs-Sammlung
 languages_collection: Sprachen-Sammlung
+translations_preview_collections: Sammlungen
+translations_preview_fields: Felder
 import_data_input_placeholder: CSV oder JSON...
 import_data_button: Import starten
 import_data_indeterminate: Importiere Daten...
@@ -646,7 +648,6 @@ no_collections: Keine Sammlungen
 create_collection: Sammlung erstellen
 no_collections_copy_admin: Keine Sammlungen vorhanden. Auf die untenstehende Schaltfläche klicken, um loszulegen.
 no_collections_copy: Keine Sammlungen vorhanden. Bitte Systemadministrator kontaktieren.
-relationship_not_setup: Die relationale Beziehung wurde nicht korrekt konfiguriert
 no_singleton_relations: Relationen zu Singletons werden nicht unterstützt
 display_template_not_setup: Die Anzeige-Vorlage ist falsch konfiguriert
 collection_field_not_setup: Das Sammlungsfeld ist falsch konfiguriert
@@ -764,7 +765,6 @@ unexpected_error_copy: Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen 
 copy_details: Details kopieren
 no_app_access: Kein App-Zugriff
 no_app_access_copy: Dieser Benutzer darf die Admin-App nicht verwenden.
-password_reset_sent: Wenn Sie ein Konto haben, haben wir Ihnen einen sicheren Link zum Zurücksetzen Ihres Passworts gesendet
 password_reset_successful: Das Passwort wurde erfolgreich zurückgesetzt
 back: Zurück
 filter: Filter
@@ -968,6 +968,15 @@ operation_handle_reject: 'Ablehnen: Zum Hinzufügen klicken oder für Reroute zi
 visual_editor: Visueller Editor
 toggle_navigation: Navigation umschalten
 insights: Einblicke
+deployment:
+  provider:
+    settings:
+      delete_confirm: Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher, dass Sie fortfahren möchten?
+    run:
+      cancel_confirm: Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher, dass Sie fortfahren möchten?
+      log_all: Alle Log-Levels
+  target_value:
+    preview: Vorschau
 dashboard: Dashboard
 panel: Panel
 panel_options: Panel-Optionen
@@ -1338,6 +1347,7 @@ fields:
     public_registration_email_filter_note: Nur E-Mail-Adressen, welche diesem Filter entsprechen, können sich registrieren.
     public_registration_verify_email: E-Mail-Adresse bestätigen
     public_registration_verify_email_note: Sendet eine E-Mail an den registrierenden Benutzer mit einem Bestätigungslink, welcher zuerst angeklickt werden muss, bevor man sich anmelden kann.
+    ai_header_name: Header
   directus_shares:
     name: Name
     role: Rolle
@@ -1490,6 +1500,7 @@ live_preview:
   new_window: In neuem Fenster öffnen
   close_window: In geteilter Ansicht öffnen
   toggle_3d: 3D umschalten
+  display_options: Anzeige-Optionen
 shares: Freigaben
 unlimited_usage: Unbegrenzte Nutzung
 uses_left: Keine Verwendungen übrig | Eine Verwendung übrig | {n} Verwendungen übrig
@@ -1498,9 +1509,13 @@ new_share: Neue Freigabe
 ai:
   input: Eingabe
   unknown: Unbekannt
+  items: Elemente
+  content: Inhalt
   settings: Einstellungen
   tool_approval:
     disabled: Deaktiviert
+  ask_user_submit: Absenden
+  ask_user_next: Weiter
 ai_tools:
   items: Elemente
   files: Dateien
@@ -1677,6 +1692,8 @@ interfaces:
     all_opened: Alle geöffnet
     accordion_mode: Akkordeon-Modus
     max_one_section_open: Max. einen Abschnitt öffnen
+  group-tabs:
+    fill_width: Breite füllen
   presentation-links:
     presentation-links: Buttons
     style: Stil
@@ -2455,3 +2472,4 @@ search_flow: Flow suchen...
 percent: Prozent
 show_password: Passwort anzeigen
 hide_password: Passwort ausblenden
+set_to_now: Auf Jetzt setzen

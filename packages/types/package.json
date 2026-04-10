@@ -1,6 +1,6 @@
 {
 	"name": "@directus/types",
-	"version": "14.0.0",
+	"version": "15.0.1",
 	"description": "Shared types for Directus",
 	"homepage": "https://directus.io",
 	"repository": {
@@ -21,8 +21,8 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsc",
-		"dev": "tsc --watch"
+		"build": "tsdown --dts",
+		"dev": "tsdown --watch"
 	},
 	"dependencies": {
 		"@directus/ai": "workspace:*",
@@ -33,7 +33,8 @@
 		"@types/geojson": "catalog:",
 		"@types/nodemailer": "catalog:",
 		"@types/ws": "catalog:",
-		"@types/archiver": "catalog:"
+		"@types/archiver": "catalog:",
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@directus/tsconfig": "catalog:",
@@ -41,7 +42,7 @@
 		"knex": "catalog:",
 		"typescript": "catalog:",
 		"vue": "catalog:",
-		"zod": "catalog:"
+		"tsdown": "catalog:"
 	},
 	"peerDependencies": {
 		"deep-diff": "catalog:",

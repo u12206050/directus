@@ -465,6 +465,8 @@ related_collection: Powiązana kolekcja
 related_collections: Powiązane kolekcje
 translations_collection: Kolekcja tłumaczeń
 languages_collection: Kolekcja języków
+translations_preview_collections: Kolekcje
+translations_preview_fields: Pola
 import_data_input_placeholder: CSV lub JSON...
 import_data_button: Rozpocznij import
 import_data_indeterminate: Importowanie danych...
@@ -637,7 +639,6 @@ no_collections: Brak kolekcji
 create_collection: Stwórz kolekcję
 no_collections_copy_admin: Nie masz jeszcze żadnych kolekcji. Kliknij poniższy przycisk, aby rozpocząć.
 no_collections_copy: Nie masz jeszcze żadnych kolekcji. Skontaktuj się z administratorem systemu.
-relationship_not_setup: Relacja nie została prawidłowo skonfigurowana
 no_singleton_relations: Relacje z Singletonami nie są obsługiwane
 display_template_not_setup: Opcja wyświetlania szablonu jest nieprawidłowo skonfigurowana
 collection_field_not_setup: Opcja pola kolekcji jest nieprawidłowo skonfigurowana
@@ -755,7 +756,6 @@ unexpected_error_copy: Wystąpił nieoczekiwany błąd. Proszę spróbować pono
 copy_details: Kopiuj szczegóły
 no_app_access: Brak dostępu do aplikacji
 no_app_access_copy: Ten użytkownik nie może używać aplikacji administracyjnej.
-password_reset_sent: Jeśli masz konto to wysłaliśmy Ci bezpieczny link do zresetowania hasła
 password_reset_successful: Hasło zostało pomyślnie zresetowane
 back: Wstecz
 filter: Filtr
@@ -954,6 +954,15 @@ operation_key_unique_error: Klucze operacji muszą być unikalne w przepływie
 operation_handle_resolve: 'Rozwiązanie: Kliknij, aby dodać lub przeciągnąć do przekierowania'
 operation_handle_reject: 'Odrzuć: Kliknij, aby dodać lub przeciągnąć do przekierowania'
 insights: Statystyki
+deployment:
+  provider:
+    settings:
+      delete_confirm: Ta akcja jest trwała i nie może zostać cofnięta. Czy na pewno chcesz kontynuować?
+    run:
+      cancel_confirm: Ta akcja jest trwała i nie może zostać cofnięta. Czy na pewno chcesz kontynuować?
+      log_all: Wszystkie poziomy logów
+  target_value:
+    preview: Podgląd
 dashboard: Pulpit
 panel: Panel
 panel_options: Opcje panelu
@@ -1310,6 +1319,7 @@ fields:
     public_registration_email_filter_note: Tylko adresy e-mail pasujące do tego filtra mogą się zarejestrować.
     public_registration_verify_email: Potwierdź e-mail
     public_registration_verify_email_note: Wysyła e-mail do użytkownika rejestrującego z prośbą o kliknięcie na link weryfikacyjny zanim będzie mógł się zalogować.
+    ai_header_name: Nagłówek
   directus_shares:
     name: Nazwa
     role: Rola
@@ -1453,6 +1463,7 @@ live_preview:
   new_window: Otwórz w nowym oknie
   close_window: Otwórz w widoku podzielonym
   toggle_3d: Przełącz 3D
+  display_options: Opcje wyświetlania
 shares: Udostępnienia
 unlimited_usage: Nieograniczone użycie
 uses_left: Brak pozostałych zastosowań | Pozostało jedno użycie | {n} pozostało do użycia
@@ -1461,9 +1472,13 @@ new_share: Nowe udostępnianie
 ai:
   input: Wprowadź
   unknown: Nieznane
+  items: Elementy
+  content: Zawartość
   settings: Ustawienia
   tool_approval:
     disabled: Wyłączony
+  ask_user_submit: Zatwierdź
+  ask_user_next: Następny
 ai_tools:
   items: Elementy
   files: Pliki
@@ -1640,6 +1655,8 @@ interfaces:
     all_opened: Wszystkie otwarte
     accordion_mode: Tryb Accordion
     max_one_section_open: Otwórz maksymalnie 1 sekcję
+  group-tabs:
+    fill_width: Szerokość wypełnienia
   presentation-links:
     presentation-links: Przyciski
     style: Style
@@ -2407,3 +2424,4 @@ search_flow: Szukaj przepływu...
 percent: Procent
 show_password: Pokaż hasło
 hide_password: Schowaj hasło
+set_to_now: Ustaw na teraz

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useElementSize } from '@directus/composables';
-import { ContentVersion, Field, ValidationError } from '@directus/types';
+import { Field, ValidationError } from '@directus/types';
 import { assign, cloneDeep, isEmpty, isEqual, isNil, omit } from 'lodash';
 import { computed, onBeforeUpdate, provide, ref, watch } from 'vue';
 import VDivider from '../v-divider.vue';
@@ -11,9 +11,12 @@ import ValidationErrors from './components/validation-errors.vue';
 import { useAiTools } from './composables/use-ai-tools';
 import type { ComparisonContext, FieldValues, FormField as TFormField } from './types';
 import { getFormFields } from './utils/get-form-fields';
+import { selectiveClone } from './utils/selective-clone';
 import { updateFieldWidths } from './utils/update-field-widths';
 import { updateSystemDivider } from './utils/update-system-divider';
+import { CollabContext } from '@/composables/use-collab';
 import { useFieldsStore } from '@/stores/fields';
+import type { ContentVersionMaybeNew } from '@/types/versions';
 import { applyConditions } from '@/utils/apply-conditions';
 import { extractFieldFromFunction } from '@/utils/extract-field-from-function';
 import { getDefaultValuesFromFields } from '@/utils/get-default-values-from-fields';
@@ -43,8 +46,9 @@ const props = withDefaults(
 		direction?: string;
 		showDivider?: boolean;
 		inline?: boolean;
-		version?: ContentVersion | null;
+		version?: ContentVersionMaybeNew | null;
 		comparison?: ComparisonContext;
+		collabContext?: CollabContext;
 	}>(),
 	{
 		collection: undefined,
@@ -64,8 +68,30 @@ const props = withDefaults(
 
 const emit = defineEmits(['update:modelValue']);
 
+const fieldsStore = useFieldsStore();
+
+const fieldDefinitions = computed<Field[]>(() => {
+	if (props.collection) {
+		return fieldsStore.getFieldsForCollection(props.collection);
+	}
+
+	if (props.fields) {
+		return props.fields;
+	}
+
+	return [];
+});
+
+const fieldDefinitionsMap = computed<Record<string, Field | undefined>>(() => {
+	return Object.fromEntries(fieldDefinitions.value.map((field) => [field.field, field]));
+});
+
 const values = computed(() => {
-	return Object.assign({}, cloneDeep(props.initialValues), cloneDeep(props.modelValue));
+	return Object.assign(
+		{},
+		selectiveClone(props.initialValues, fieldDefinitionsMap.value),
+		selectiveClone(props.modelValue, fieldDefinitionsMap.value),
+	);
 });
 
 const el = ref<Element>();
@@ -75,8 +101,8 @@ const { width } = useElementSize(el);
 const gridClass = computed<string | null>(() => {
 	if (el.value === null) return null;
 
-	// 856 (drawer width) - 2 * 24 (content-padding) = 808
-	if (width.value > 808) {
+	// 770 (drawer width) - 2 * 22 (content-padding) = 726
+	if (width.value > 726) {
 		return 'grid with-fill';
 	} else {
 		return 'grid';
@@ -99,7 +125,7 @@ const {
 	isFieldVisible,
 } = useForm();
 
-useAiTools({ finalFields, fieldNames, setValue, values });
+useAiTools({ finalFields, fieldNames, setValue, values, collabContext: props.collabContext });
 
 const { toggleBatchField, batchActiveFields } = useBatch();
 const { toggleRawField, rawActiveFields } = useRawEditor();
@@ -254,6 +280,10 @@ function useForm() {
 	}
 
 	function isFieldVisible(field: Field | TFormField): boolean {
+		if (props.comparison?.showDifferencesOnly) {
+			return !!props.comparison.fields.has(field.field);
+		}
+
 		return (
 			field.meta?.hidden !== true ||
 			!!props.comparison?.fields?.has(field.field) ||
@@ -267,7 +297,7 @@ function setValue(fieldKey: string, value: any, opts?: { force?: boolean }) {
 
 	if (opts?.force !== true && (!field || isDisabled(field))) return;
 
-	const edits = props.modelValue ? cloneDeep(props.modelValue) : {};
+	const edits = props.modelValue ? selectiveClone(props.modelValue, fieldDefinitionsMap.value) : {};
 	edits[fieldKey] = value;
 	emit('update:modelValue', edits);
 }
@@ -290,7 +320,28 @@ function apply(updates: { [field: string]: any }) {
 
 		emit('update:modelValue', assign({}, omit(props.modelValue, groupFields), pickKeepMeta(updates, updatableKeys)));
 	} else {
-		emit('update:modelValue', pickKeepMeta(assign({}, props.modelValue, updates), updatableKeys));
+		// Preserve existing values for fields that belong to groups
+		const updatableGroupKeys = Object.keys(updates).filter((key) => {
+			if (key.startsWith('$')) return false;
+			const field = fieldsMap.value[key];
+			return !isNil(field?.meta?.group) && props.modelValue && key in props.modelValue;
+		});
+
+		// Preserve readonly field values when unchanged
+		const preservedReadonlyKeys = Object.keys(updates).filter((key) => {
+			if (key.startsWith('$') || updatableKeys.includes(key)) return false;
+			const field = fieldsMap.value[key];
+			return field && isDisabled(field) && isEqual(props.modelValue?.[key], updates[key]);
+		});
+
+		emit(
+			'update:modelValue',
+			pickKeepMeta(assign({}, props.modelValue, updates), [
+				...updatableKeys,
+				...updatableGroupKeys,
+				...preservedReadonlyKeys,
+			]),
+		);
 	}
 }
 
@@ -367,6 +418,14 @@ function getFirstVisibleFieldClass(index: number) {
 	return index === firstVisibleFieldIndex.value ? 'first-visible-field' : '';
 }
 
+function isGroupFieldVisible(field: TFormField, groupFields: Field[]): boolean {
+	if (props.comparison?.showDifferencesOnly) {
+		return groupFields.some((f) => props.comparison!.fields.has(f.field));
+	}
+
+	return isFieldVisible(field);
+}
+
 function getComparisonIndicatorClasses(field: TFormField, isGroup = false) {
 	if (isComparisonDiff()) {
 		if (field.indicatorStyle === 'active') return 'indicator-active';
@@ -409,7 +468,10 @@ function getComparisonIndicatorClasses(field: TFormField, isGroup = false) {
 			<template v-if="fieldsMap[fieldName]">
 				<component
 					:is="`interface-${fieldsMap[fieldName]!.meta?.interface || 'group-standard'}`"
-					v-if="fieldsMap[fieldName]!.meta?.special?.includes('group') && isFieldVisible(fieldsMap[fieldName])"
+					v-if="
+						fieldsMap[fieldName]!.meta?.special?.includes('group') &&
+						isGroupFieldVisible(fieldsMap[fieldName]!, fieldsForGroup[index] || [])
+					"
 					:ref="
 						(el: Element) => {
 							formFieldEls[fieldName] = el;
@@ -436,6 +498,7 @@ function getComparisonIndicatorClasses(field: TFormField, isGroup = false) {
 					:direction="direction"
 					:version
 					:comparison="comparison"
+					:collab-context="collabContext"
 					v-bind="fieldsMap[fieldName]!.meta?.options || {}"
 					@apply="apply"
 				/>
@@ -458,6 +521,7 @@ function getComparisonIndicatorClasses(field: TFormField, isGroup = false) {
 					:batch-active="batchActiveFields.includes(fieldName)"
 					:comparison="comparison"
 					:comparison-active="comparison?.selectedFields.includes(fieldName)"
+					:collab-field-context="collabContext?.registerField(fieldName)"
 					:primary-key="primaryKey"
 					:loading="loading"
 					:validation-error="
@@ -502,7 +566,7 @@ function getComparisonIndicatorClasses(field: TFormField, isGroup = false) {
 }
 
 .v-divider {
-	margin-block-end: 50px;
+	margin-block-end: 2.8125rem;
 	grid-column: 1 / 3;
 }
 

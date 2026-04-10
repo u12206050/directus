@@ -3,7 +3,7 @@ import { type SystemTool, type ToolApprovalMode } from '@directus/ai';
 import formatTitle from '@directus/format-title';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAiStore } from '../stores/use-ai';
+import { useAiToolsStore } from '../stores/use-ai-tools';
 import VButton from '@/components/v-button.vue';
 import VDivider from '@/components/v-divider.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -16,7 +16,7 @@ import VMenu from '@/components/v-menu.vue';
 import VSelect from '@/components/v-select/v-select.vue';
 
 const { t } = useI18n();
-const aiStore = useAiStore();
+const toolsStore = useAiToolsStore();
 
 const menuOpen = ref(false);
 const searchQuery = ref('');
@@ -25,7 +25,7 @@ watch(menuOpen, (open) => {
 	if (!open) searchQuery.value = '';
 });
 
-const systemTools = aiStore.systemTools;
+const systemTools = toolsStore.systemTools;
 
 const filterBySearch = (tools: string[]) => {
 	if (!searchQuery.value) return tools;
@@ -34,11 +34,11 @@ const filterBySearch = (tools: string[]) => {
 };
 
 const enabledTools = computed(() =>
-	filterBySearch(systemTools.filter((t) => aiStore.getToolApprovalMode(t) !== 'disabled')),
+	filterBySearch(systemTools.filter((t) => toolsStore.getToolApprovalMode(t) !== 'disabled')),
 );
 
 const disabledTools = computed(() =>
-	filterBySearch(systemTools.filter((t) => aiStore.getToolApprovalMode(t) === 'disabled')),
+	filterBySearch(systemTools.filter((t) => toolsStore.getToolApprovalMode(t) === 'disabled')),
 );
 
 const approvalModeOptions = computed(() => [
@@ -65,7 +65,7 @@ const toolOptions = computed(() => {
 	const map = new Map<string, { icon: string; approval: (typeof approvalModeOptions.value)[0] }>();
 
 	for (const tool of systemTools) {
-		const mode = aiStore.getToolApprovalMode(tool);
+		const mode = toolsStore.getToolApprovalMode(tool);
 
 		map.set(tool, {
 			icon: toolIcons[tool] || 'build',
@@ -77,7 +77,7 @@ const toolOptions = computed(() => {
 });
 
 function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
-	aiStore.setToolApprovalMode(toolName, mode);
+	toolsStore.setToolApprovalMode(toolName, mode);
 }
 </script>
 
@@ -118,7 +118,7 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 										{{ $t(`ai_tools.${toolName}`) }}
 									</span>
 									<VSelect
-										:model-value="aiStore.getToolApprovalMode(toolName)"
+										:model-value="toolsStore.getToolApprovalMode(toolName)"
 										:items="approvalModeOptions"
 										item-icon="icon"
 										item-color="color"
@@ -127,7 +127,7 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 									>
 										<template #preview>
 											<div class="approval-preview" :style="{ color: toolOptions.get(toolName)?.approval?.color }">
-												<VIcon :name="toolOptions.get(toolName)?.approval?.icon" x-small />
+												<VIcon :name="toolOptions.get(toolName)?.approval?.icon ?? 'check'" x-small />
 												{{ toolOptions.get(toolName)?.approval?.text }}
 											</div>
 										</template>
@@ -157,7 +157,7 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 										{{ formatTitle(toolName) }}
 									</span>
 									<VSelect
-										:model-value="aiStore.getToolApprovalMode(toolName)"
+										:model-value="toolsStore.getToolApprovalMode(toolName)"
 										:items="approvalModeOptions"
 										item-icon="icon"
 										item-color="color"
@@ -166,7 +166,7 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 									>
 										<template #preview>
 											<div class="approval-preview" :style="{ color: toolOptions.get(toolName)?.approval?.color }">
-												<VIcon :name="toolOptions.get(toolName)?.approval?.icon" x-small />
+												<VIcon :name="toolOptions.get(toolName)?.approval?.icon ?? 'check'" x-small />
 												{{ toolOptions.get(toolName)?.approval?.text }}
 											</div>
 										</template>
@@ -187,9 +187,9 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 }
 
 .settings-container {
-	min-inline-size: 320px;
-	max-inline-size: 400px;
-	max-block-size: 400px;
+	min-inline-size: 18rem;
+	max-inline-size: 22.5rem;
+	max-block-size: 22.5rem;
 	overflow-y: auto;
 }
 
@@ -197,13 +197,13 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 	position: sticky;
 	inset-block-start: 0;
 	z-index: 1;
-	padding: 8px;
+	padding: 0.4375rem;
 	background-color: var(--theme--popover--menu--background);
 }
 
 .section-title {
 	font-weight: 600;
-	font-size: 14px;
+	font-size: 0.8125rem;
 	color: var(--theme--foreground);
 }
 
@@ -211,18 +211,18 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
+	gap: 0.4375rem;
 	inline-size: 100%;
 }
 
 .tool-name {
-	font-size: 14px;
+	font-size: 0.8125rem;
 	color: var(--theme--foreground);
 }
 
 .tool-item :deep(.v-select) {
 	--v-select-font-family: var(--theme--fonts--sans--font-family);
-	min-inline-size: 100px;
+	min-inline-size: 5.625rem;
 }
 
 .tool-item :deep(.inline-display > .v-icon) {
@@ -232,6 +232,6 @@ function onApprovalModeChange(toolName: string, mode: ToolApprovalMode) {
 .approval-preview {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: 0.25rem;
 }
 </style>

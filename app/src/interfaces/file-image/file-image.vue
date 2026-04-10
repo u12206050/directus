@@ -13,6 +13,7 @@ import VNotice from '@/components/v-notice.vue';
 import VRemove from '@/components/v-remove.vue';
 import VSkeletonLoader from '@/components/v-skeleton-loader.vue';
 import VUpload from '@/components/v-upload.vue';
+import { useMimeTypeFilter } from '@/composables/use-mime-type-filter';
 import { useRelationM2O } from '@/composables/use-relation-m2o';
 import { useRelationPermissionsM2O } from '@/composables/use-relation-permissions';
 import { RelationQuerySingle, useRelationSingle } from '@/composables/use-relation-single';
@@ -40,6 +41,7 @@ const props = withDefaults(
 		letterbox?: boolean;
 		enableCreate?: boolean;
 		enableSelect?: boolean;
+		allowedMimeTypes?: string[];
 	}>(),
 	{
 		crop: true,
@@ -141,12 +143,9 @@ async function imageErrorHandler() {
 
 const values = inject('values', ref<Record<string, unknown>>({}));
 
-// Image-only filter for file library
-const imageFilter = {
-	type: {
-		_starts_with: 'image/',
-	},
-};
+const { mimeTypeFilter, combinedAcceptString } = useMimeTypeFilter(
+	computed(() => (props.allowedMimeTypes?.length ? props.allowedMimeTypes : ['image/*'])),
+);
 
 const customFilter = computed(() => {
 	const filter = parseFilter(
@@ -159,10 +158,11 @@ const customFilter = computed(() => {
 		}),
 	);
 
-	if (!filter) return imageFilter;
+	if (!mimeTypeFilter.value) return filter;
+	if (!filter) return mimeTypeFilter.value;
 
 	return {
-		_and: [filter, imageFilter],
+		_and: [filter, mimeTypeFilter.value],
 	};
 });
 
@@ -186,11 +186,15 @@ const edits = computed(() => {
 	return props.value;
 });
 
+const menuActive = computed(
+	() => lightboxActive.value || editDrawerActive.value || editImageDetails.value || editImageEditor.value,
+);
+
 const { createAllowed, updateAllowed } = useRelationPermissionsM2O(relationInfo);
 </script>
 
 <template>
-	<div class="image" :class="[width, { crop }]">
+	<div v-prevent-focusout="menuActive" class="image" :class="[width, { crop }]">
 		<VSkeletonLoader v-if="loading" type="input-tall" />
 
 		<VNotice v-else-if="nonEditable && !image" icon="hide_image" center class="non-editable-notice">
@@ -294,7 +298,7 @@ const { createAllowed, updateAllowed } = useRelationPermissionsM2O(relationInfo)
 			:folder="folder"
 			:filter="customFilter"
 			:disabled="internalDisabled"
-			accept="image/*"
+			:accept="combinedAcceptString"
 			@input="onUpload"
 		/>
 	</div>
@@ -310,7 +314,7 @@ img {
 }
 
 .is-letterbox {
-	padding: 32px;
+	padding: 1.8125rem;
 }
 
 .image-error {
@@ -321,15 +325,15 @@ img {
 	block-size: 100%;
 	color: var(--theme--form--field--input--foreground-subdued);
 	background-color: var(--theme--background-normal);
-	padding: 32px;
+	padding: 1.8125rem;
 
 	.v-icon {
-		margin-block-end: 6px;
+		margin-block-end: 0.3125rem;
 	}
 
 	.message {
-		max-inline-size: 300px;
-		padding: 0 16px;
+		max-inline-size: 16.875rem;
+		padding: 0 0.875rem;
 		text-align: center;
 	}
 }
@@ -349,7 +353,7 @@ img {
 		inset-inline-start: 0;
 		z-index: 2;
 		inline-size: 100%;
-		block-size: 40px;
+		block-size: 2.25rem;
 		overflow: hidden;
 		line-height: 1;
 		white-space: nowrap;
@@ -365,16 +369,16 @@ img {
 		--v-button-background-color-hover: var(--white);
 
 		position: absolute;
-		inset-block-start: calc(50% - 32px);
+		inset-block-start: calc(50% - 1.8125rem);
 		inset-inline-start: 0;
 		z-index: 3;
 		display: flex;
 		justify-content: center;
 		inline-size: 100%;
-		gap: 12px;
+		gap: 0.6875rem;
 
 		::v-deep(.v-button) {
-			transform: translateY(10px);
+			transform: translateY(0.5625rem);
 			opacity: 0;
 			transition: var(--medium) var(--transition);
 			transition-property: opacity, transform;
@@ -393,7 +397,7 @@ img {
 		inset-inline-start: 0;
 		z-index: 3;
 		inline-size: 100%;
-		padding: 8px 12px;
+		padding: 0.4375rem 0.6875rem;
 		line-height: 1.2;
 	}
 
@@ -402,7 +406,7 @@ img {
 	}
 
 	.meta {
-		block-size: 17px;
+		block-size: 0.9375rem;
 		max-block-size: 0;
 		overflow: hidden;
 		color: rgb(255 255 255 / 0.75);
@@ -424,7 +428,7 @@ img {
 			}
 
 			.meta {
-				max-block-size: 17px;
+				max-block-size: 0.9375rem;
 			}
 		}
 	}
@@ -439,7 +443,7 @@ img {
 	&.fill {
 		.image-preview {
 			block-size: auto;
-			max-block-size: 400px;
+			max-block-size: 22.5rem;
 		}
 	}
 

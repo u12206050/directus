@@ -83,6 +83,9 @@ const value = computed<ChangesItem | any[]>({
 
 const { collection, field, primaryKey, relationInfo, root, fields, template, customFilter, version } = toRefs(props);
 
+const addNewActive = defineModel<boolean>('addNewOpen');
+const selectDrawer = defineModel<boolean>('selectOpen');
+
 const drag = ref(false);
 const open = ref<Record<string, boolean>>({});
 
@@ -97,8 +100,6 @@ const query = computed<RelationQueryMultiple>(() => ({
 
 const { displayItems, loading, create, update, remove, select, cleanItem, isLocalItem, getItemEdits } =
 	useRelationMultiple(value, query, relationInfo, primaryKey, version);
-
-const selectDrawer = ref(false);
 
 const dragOptions = {
 	animation: 150,
@@ -172,8 +173,6 @@ function sort(from: number, to: number) {
 
 	update(...sortedItems);
 }
-
-const addNewActive = ref(false);
 
 function addNew(item: Record<string, any>) {
 	item[relationInfo.value.reverseJunctionField.field] = primaryKey.value;
@@ -287,15 +286,15 @@ function stageEdits(item: Record<string, any>) {
 @use '@/styles/mixins';
 
 .drag-area {
-	min-block-size: 12px;
+	min-block-size: 0.6875rem;
 
 	&.root {
 		margin-inline-start: 0;
 		padding: 0;
 
 		.v-skeleton-loader {
-			margin: 12px 0 12px auto;
-			inline-size: calc(100% - 24px);
+			margin: 0.6875rem 0 0.6875rem auto;
+			inline-size: calc(100% - 1.375rem);
 		}
 
 		&:empty {
@@ -318,7 +317,7 @@ function stageEdits(item: Record<string, any>) {
 		display: block;
 
 		+ .v-list-item {
-			margin-block-start: 8px;
+			margin-block-start: 0.4375rem;
 		}
 	}
 
@@ -327,7 +326,7 @@ function stageEdits(item: Record<string, any>) {
 	}
 
 	.preview {
-		padding: 12px;
+		padding: 0.6875rem;
 		cursor: grab;
 		background-color: var(--theme--form--field--input--background);
 		border: var(--theme--border-width) solid var(--theme--border-color);
@@ -337,7 +336,7 @@ function stageEdits(item: Record<string, any>) {
 			padding: 0;
 
 			> .v-list-item:first-child {
-				margin-block-start: 8px;
+				margin-block-start: 0.4375rem;
 			}
 		}
 	}

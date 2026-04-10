@@ -463,6 +463,8 @@ related_collection: Súvisiaca zbierka
 related_collections: Súvisiace zbierky
 translations_collection: Zbierka prekladov
 languages_collection: Zbierka jazykov
+translations_preview_collections: Zbierky
+translations_preview_fields: Polia
 import_data_input_placeholder: CSV alebo JSON...
 import_data_button: Spustiť import
 import_data_indeterminate: Prebieha import dát...
@@ -636,7 +638,6 @@ no_collections: Žiadna zbierka
 create_collection: Vytvoriť zbierku
 no_collections_copy_admin: Zatiaľ nemáte žiadne zbierky. Začnite kliknutím na tlačidlo nižšie.
 no_collections_copy: Zatiaľ nemáte žiadne zbierky. Prosím kontaktujte svojho správu.
-relationship_not_setup: Tento vzťah nebol správne nastavený
 no_singleton_relations: Vzťahy so singletonmi nie sú podporované
 display_template_not_setup: Šablóna zobrazenia je zle nakonfigurovaná
 collection_field_not_setup: Voľby poľa zbierky sú zle nastavené
@@ -754,7 +755,6 @@ unexpected_error_copy: Vyskytla sa neočakávaná chyba. Prosím skúste znova.
 copy_details: Kopírovať podrobnosti
 no_app_access: Žiadny prístup applikácie
 no_app_access_copy: Tento používateľ nemôže používať admin.
-password_reset_sent: Ak máte účet, poslali sme vám bezpečný odkaz na obnoveni vášho hesla
 password_reset_successful: Heslo úspešne obnovené
 back: Späť
 filter: Filter
@@ -955,6 +955,15 @@ operation_key_unique_error: Kľúče operácie musia byť v toku unikátne
 operation_handle_resolve: 'Úspech: kliknutím pridáte, potiahnutím presmerujete'
 operation_handle_reject: 'Chyba: kliknutím pridáte, potiahnutím presmerujete'
 insights: Prehľady
+deployment:
+  provider:
+    settings:
+      delete_confirm: Táto akcia je trvalá a nedá sa vrátiť. Naozaj chcete pokračovať?
+    run:
+      cancel_confirm: Táto akcia je trvalá a nedá sa vrátiť. Naozaj chcete pokračovať?
+      log_all: Všetky úrovne logov
+  target_value:
+    preview: Náhľad
 dashboard: Nástenka
 panel: Panel
 panel_options: Možnosti panela
@@ -1324,6 +1333,7 @@ fields:
     public_registration_email_filter_note: Len adersy vyhovujúce tomuto filtru sa môžu zaregistrovať.
     public_registration_verify_email: Overiť Email
     public_registration_verify_email_note: Pošle email registrovanému používateľovi so žiadosťou o kliknutie na verifikačný odkaz pred prihlásením.
+    ai_header_name: Hlavička
   directus_shares:
     name: Názov
     role: Rola
@@ -1475,6 +1485,7 @@ live_preview:
   new_window: Otvoriť v novom okne
   close_window: Otvoriť v rozdelenom okne
   toggle_3d: Prepnúť 3D
+  display_options: Možnosti zobrazenia
 shares: Zdieľania
 unlimited_usage: Neobmedzené používanie
 uses_left: Žiadne zostávajúce použitia | Jedno zostávajúce použitie | {n} zostávajúcich použití
@@ -1483,9 +1494,13 @@ new_share: Nové zdieľanie
 ai:
   input: Vstup
   unknown: Neznáme
+  items: Položky
+  content: Obsah
   settings: Nastavenia
   tool_approval:
     disabled: Vypnuté
+  ask_user_submit: Odoslať
+  ask_user_next: Ďalej
 ai_tools:
   items: Položky
   files: Súbory
@@ -1662,6 +1677,8 @@ interfaces:
     all_opened: Všetko otvorené
     accordion_mode: Režim akordeónu
     max_one_section_open: Max 1 sekcia otvorená
+  group-tabs:
+    fill_width: Vyplniť šírku
   presentation-links:
     presentation-links: Tlačidlá
     style: Štýl
@@ -2430,3 +2447,4 @@ search_flow: Hľadať tok...
 percent: Percent
 show_password: Zobraziť heslo
 hide_password: Skryť heslo
+set_to_now: Nastaviť na teraz

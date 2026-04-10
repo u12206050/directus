@@ -167,7 +167,7 @@ function onSort(sortedItems: Record<string, any>[]) {
 </script>
 
 <template>
-	<div class="collection-item-multiple-dropdown">
+	<div v-prevent-focusout="selectDrawerOpen" class="collection-item-multiple-dropdown">
 		<VNotice v-if="displayItems.length === 0">
 			{{ t('no_items') }}
 		</VNotice>
@@ -247,7 +247,7 @@ function onSort(sortedItems: Record<string, any>[]) {
 .preview {
 	display: block;
 	flex-grow: 1;
-	block-size: calc(100% - 16px);
+	block-size: calc(100% - 0.875rem);
 	overflow: hidden;
 }
 

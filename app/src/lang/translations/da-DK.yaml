@@ -405,6 +405,8 @@ related_collection: Relateret samling
 related_collections: Relaterede samlinger
 translations_collection: Oversættelse samling
 languages_collection: Sprog samling
+translations_preview_collections: Samlinger
+translations_preview_fields: Felter
 import_data_input_placeholder: CSV eller JSON...
 import_data_button: Begynd import
 import_data_indeterminate: Importerer data...
@@ -552,7 +554,6 @@ no_collections: Ingen samlinger
 create_collection: Opret samling
 no_collections_copy_admin: Du har endnu ikke nogen samlinger. Klik på knappen nedenfor for at komme i gang.
 no_collections_copy: Du har endnu ikke nogen samlinger. Kontakt venligst din systemadministrator.
-relationship_not_setup: Forholdet er ikke konfigureret korrekt
 display_template_not_setup: Visningsskabelonen er forkert konfigureret
 collection_field_not_setup: Indstillingen for samlingsfelt er forkert konfigureret
 select_a_collection: Vælg en samling
@@ -658,7 +659,6 @@ unexpected_error: Uventet fejl
 copy_details: Kopiér detaljer
 no_app_access: Ingen app adgang
 no_app_access_copy: Denne bruger har ikke tilladelse til at bruge admin appen.
-password_reset_sent: Hvis din konto findes har vi sendt dig et sikkert link til nulstilling af din adgangskode
 password_reset_successful: Adgangskode nulstillet
 back: Tilbage
 filter: Filtrer
@@ -836,6 +836,14 @@ operation_key_unique_error: Betjeningsnøgler skal være unikke i et flow
 operation_handle_resolve: 'Løs: Klik for at tilføje eller træk for at omdirigere'
 operation_handle_reject: 'Afvis: Klik for at tilføje eller træk for at omdirigere'
 insights: Indsigter
+deployment:
+  provider:
+    settings:
+      delete_confirm: Denne handling er permanent og kan ikke fortrydes. Er du sikker på, at du vil fortsætte?
+    run:
+      cancel_confirm: Denne handling er permanent og kan ikke fortrydes. Er du sikker på, at du vil fortsætte?
+  target_value:
+    preview: Eksempelvisning
 dashboard: Instrumentbræt
 panel: Stykke
 panel_options: Panel indstillinger
@@ -1127,6 +1135,7 @@ fields:
     transformations_presets: Begræns transformationer til forudindstillinger nedenfor
     image_editor: Billedredigering
     custom_aspect_ratios: Brugerdefinerede billedformater
+    ai_header_name: Overskrift
   directus_shares:
     name: Navn
     role: Rolle
@@ -1257,9 +1266,13 @@ new_share: Ny Del
 ai:
   input: Input
   unknown: Ukendt
+  items: elementer
+  content: Indhold
   settings: Indstillinger
   tool_approval:
     disabled: Deaktiveret
+  ask_user_submit: Send
+  ask_user_next: Næste
 ai_tools:
   items: elementer
   files: Filer
@@ -1413,6 +1426,8 @@ interfaces:
     all_opened: Alle åbnede
     accordion_mode: Harmonika tilstand
     max_one_section_open: Maks en sektion åben
+  group-tabs:
+    fill_width: Fuld bredde
   presentation-links:
     presentation-links: Knapper
     style: Stil
@@ -2052,3 +2067,4 @@ fonts:
   black: Sort
   italic: Kursiv
   auto: Automatisk
+set_to_now: Indstil til nu

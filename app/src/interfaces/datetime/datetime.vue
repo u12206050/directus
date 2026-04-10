@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { isValid } from 'date-fns';
-import { computed, ref } from 'vue';
+import { isValid, parseISO } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { computed, ref, useTemplateRef } from 'vue';
 import UseDatetime, { type Props as UseDatetimeProps } from '@/components/use-datetime.vue';
-import VDatePicker from '@/components/v-date-picker.vue';
+import VDatePicker from '@/components/v-date-picker/v-date-picker.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import VListItem from '@/components/v-list-item.vue';
 import VMenu from '@/components/v-menu.vue';
@@ -13,6 +14,7 @@ interface Props extends Omit<UseDatetimeProps, 'value'> {
 	value: string | null;
 	disabled?: boolean;
 	nonEditable?: boolean;
+	tz?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,19 +30,61 @@ const emit = defineEmits<{
 	(e: 'input', value: string | null): void;
 }>();
 
-const dateTimeMenu = ref();
+const menuActive = ref(false);
+const dateTimeMenu = useTemplateRef('dateTimeMenu');
 
 const isValidValue = computed(() => (props.value ? isValid(parseDate(props.value, props.type)) : false));
 
-function unsetValue(e: any) {
+function unsetValue(e: Event) {
 	e.preventDefault();
 	e.stopPropagation();
 	emit('input', null);
 }
+
+function closeDatePicker() {
+	dateTimeMenu.value?.deactivate();
+}
+
+// Computed property for date-picker value with timezone conversion
+const tzValue = computed({
+	get() {
+		if (props.type === 'timestamp' && props.tz && props.value) {
+			const date = parseISO(props.value);
+			if (!isValid(date)) return null;
+			return toZonedTime(date, props.tz).toISOString();
+		}
+
+		return props.value;
+	},
+	set(value: string | null) {
+		if (!value) {
+			emit('input', null);
+			return;
+		}
+
+		const date = parseISO(value);
+
+		if (isValid(date) && props.type === 'timestamp' && props.tz) {
+			emit('input', fromZonedTime(date, props.tz).toISOString());
+			return;
+		}
+
+		emit('input', value);
+	},
+});
 </script>
 
 <template>
-	<VMenu ref="dateTimeMenu" :close-on-content-click="false" attached :disabled full-height seamless>
+	<VMenu
+		ref="dateTimeMenu"
+		v-model="menuActive"
+		v-prevent-focusout="menuActive"
+		:close-on-content-click="false"
+		attached
+		:disabled="disabled"
+		full-height
+		seamless
+	>
 		<template #activator="{ toggle, active }">
 			<VListItem block clickable :disabled :non-editable :active @click="toggle">
 				<template v-if="isValidValue">
@@ -52,8 +96,8 @@ function unsetValue(e: any) {
 				<div class="spacer" />
 
 				<div v-if="!nonEditable" class="item-actions">
+					<VIcon v-if="tz" v-tooltip="tz" name="schedule" class="timezone-icon" :class="{ active, disabled }" />
 					<VRemove v-if="value" :disabled deselect class="clear-icon" @action="unsetValue($event)" />
-
 					<VIcon v-else name="today" class="today-icon" :class="{ active, disabled }" />
 				</div>
 			</VListItem>
@@ -64,9 +108,9 @@ function unsetValue(e: any) {
 			:disabled
 			:include-seconds
 			:use-24
-			:model-value="value"
-			@update:model-value="$emit('input', $event)"
-			@close="dateTimeMenu?.deactivate"
+			:model-value="tzValue"
+			@update:model-value="tzValue = $event"
+			@close="closeDatePicker"
 		/>
 	</VMenu>
 </template>
@@ -101,6 +145,10 @@ function unsetValue(e: any) {
 	&.active {
 		--v-icon-color: var(--theme--primary);
 	}
+}
+
+.timezone-icon {
+	margin-inline-end: 0.25rem;
 }
 
 .item-actions {

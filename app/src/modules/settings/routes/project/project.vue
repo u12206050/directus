@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCollection } from '@directus/composables';
+import { useShortcut } from '@directus/composables';
 import { clone } from 'lodash';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -13,7 +14,6 @@ import VCard from '@/components/v-card.vue';
 import VDialog from '@/components/v-dialog.vue';
 import VForm from '@/components/v-form/v-form.vue';
 import { useEditsGuard } from '@/composables/use-edits-guard';
-import { useShortcut } from '@/composables/use-shortcut';
 import { useServerStore } from '@/stores/server';
 import { useSettingsStore } from '@/stores/settings';
 import { PrivateViewHeaderBarActionButton } from '@/views/private';
@@ -29,13 +29,30 @@ const { fields: allFields } = useCollection('directus_settings');
 const EXCLUDED_GROUPS = ['theming_group', 'ai_group', 'mcp_group'] as const;
 
 const fields = computed(() => {
-	return allFields.value.filter((field) => {
-		if (field.meta?.group) {
-			return EXCLUDED_GROUPS.includes(field.meta?.group) === false;
-		}
+	return allFields.value
+		.map((field) => {
+			if (
+				field.field === 'collaborative_editing_enabled' &&
+				(serverStore.info.websocket === false || serverStore.info.websocket?.collaborativeEditing === false)
+			) {
+				return {
+					...field,
+					meta: {
+						...field.meta,
+						readonly: true,
+					},
+				} as any;
+			}
 
-		return EXCLUDED_GROUPS.includes(field.field) === false;
-	});
+			return field;
+		})
+		.filter((field) => {
+			if (field.meta?.group) {
+				return EXCLUDED_GROUPS.includes(field.meta?.group) === false;
+			}
+
+			return EXCLUDED_GROUPS.includes(field.field) === false;
+		});
 });
 
 const initialValues = ref(clone(settingsStore.settings));

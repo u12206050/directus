@@ -3,6 +3,7 @@ import { isPlainObject } from 'lodash';
 import { computed, ref } from 'vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import { useClipboard } from '@/composables/use-clipboard';
+import { extractErrorCode } from '@/utils/extract-error-code';
 
 interface Props {
 	error: Record<string, any>;
@@ -10,9 +11,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const code = computed(() => {
-	return props.error?.response?.data?.errors?.[0]?.extensions?.code || props.error?.extensions?.code || 'UNKNOWN';
-});
+const code = computed(() => extractErrorCode(props.error));
 
 const message = computed(() => {
 	let message = props.error?.response?.data?.errors?.[0]?.message || props.error?.message;
@@ -58,7 +57,7 @@ async function copyError() {
 <style lang="scss" scoped>
 .v-error {
 	max-block-size: 50vh;
-	padding: 6px 12px;
+	padding: 0.3125rem 0.6875rem;
 	overflow: auto;
 	color: var(--theme--danger);
 	font-family: var(--theme--fonts--monospace--font-family);
@@ -66,7 +65,7 @@ async function copyError() {
 	border-radius: var(--theme--border-radius);
 
 	.copy-error {
-		margin-inline-start: 12px;
+		margin-inline-start: 0.6875rem;
 	}
 }
 </style>

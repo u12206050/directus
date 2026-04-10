@@ -451,6 +451,8 @@ related_collection: Релативна колекция
 related_collections: Релационни колекции
 translations_collection: Колекция с преводи
 languages_collection: Колекция с езици
+translations_preview_collections: Колекции
+translations_preview_fields: Полета
 import_data_input_placeholder: CSV или JSON...
 import_data_button: Започване на импортирането
 import_data_indeterminate: Импортиране на данните...
@@ -614,7 +616,6 @@ no_collections: Няма колекции
 create_collection: Създаване на колекция
 no_collections_copy_admin: Все още няма колекции. Натиснете бутона по-долу за да започнете.
 no_collections_copy: Все още нямате никакви колекции. Свържете се със системния администратор.
-relationship_not_setup: Релацията не е конфигурирана правилно
 no_singleton_relations: Връзките към Singletons не се поддържат
 display_template_not_setup: Настройките за показване не са конфигурирани правилно
 collection_field_not_setup: Настройките на полето от колекцията, не са конфигурирани правилно
@@ -731,7 +732,6 @@ unexpected_error: Неочаквана грешка
 copy_details: Копиране на детайли
 no_app_access: Без достъп до приложението
 no_app_access_copy: Не е позволено използването на администраторското приложение от потребителя.
-password_reset_sent: Ако профилът съществува, ще бъде изпратен имейл с подсигурена връзка за нулиране на паролата
 password_reset_successful: Паролата е нулирана успешно
 back: Назад
 filter: Филтриране
@@ -927,6 +927,14 @@ operation_key_unique_error: Оперативните ключове трябва
 operation_handle_resolve: 'Изпълнение: Натиснете за добавяне или придърпайте за пренасочване'
 operation_handle_reject: 'Отхвърляне: Натиснете за добавяне или придърпайте за пренасочване'
 insights: Задълбочен анализ
+deployment:
+  provider:
+    settings:
+      delete_confirm: Действието е завинаги и не може да бъде отменено. Сигурни ли сте, че искате да продължите?
+    run:
+      cancel_confirm: Действието е завинаги и не може да бъде отменено. Сигурни ли сте, че искате да продължите?
+  target_value:
+    preview: Преглед
 dashboard: Табло
 panel: Панел
 panel_options: Настройки на панела
@@ -1264,6 +1272,7 @@ fields:
     custom_aspect_ratios: Собствени аспектни съотношения
     theme_light_overrides: Персонализиране на светла тема
     theme_dark_overrides: Персонализиране на тъмна тема
+    ai_header_name: Хедър
   directus_shares:
     name: Име
     role: Роля
@@ -1401,6 +1410,7 @@ live_preview:
   new_window: Отваряне в нов прозорец
   close_window: Отворете в разделен изглед
   toggle_3d: Превключване на 3D
+  display_options: Опции на дисплея
 shares: Споделяния
 unlimited_usage: Неограничено използване
 no_shares: Не е споделено
@@ -1408,9 +1418,13 @@ new_share: Ново споделяне
 ai:
   input: Текстово поле
   unknown: Неизвестен
+  items: Записи
+  content: Съдържание
   settings: Настройки
   tool_approval:
     disabled: Изключване
+  ask_user_submit: Изпращане
+  ask_user_next: Напред
 ai_tools:
   items: Записи
   files: Файлове
@@ -1574,6 +1588,8 @@ interfaces:
     all_opened: Всички са отворени
     accordion_mode: Акордионен режим
     max_one_section_open: До 1 отворена секция
+  group-tabs:
+    fill_width: Изпълване по ширина
   presentation-links:
     presentation-links: Бутони
     style: Стил
@@ -2337,3 +2353,4 @@ search_flow: Поток на търсене...
 percent: Процент
 show_password: Показване на паролата
 hide_password: Скриване на паролата
+set_to_now: Сегашно време

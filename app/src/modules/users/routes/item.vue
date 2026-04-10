@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCollection } from '@directus/composables';
+import { useShortcut } from '@directus/composables';
 import type { User } from '@directus/types';
 import { computed, provide, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -19,9 +20,9 @@ import VForm from '@/components/v-form/v-form.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
 import VImage from '@/components/v-image.vue';
 import VSkeletonLoader from '@/components/v-skeleton-loader.vue';
+import { useCollab } from '@/composables/use-collab';
 import { useEditsGuard } from '@/composables/use-edits-guard';
 import { useItem } from '@/composables/use-item';
-import { useShortcut } from '@/composables/use-shortcut';
 import { useCollectionsStore } from '@/stores/collections';
 import { useFieldsStore } from '@/stores/fields';
 import { useServerStore } from '@/stores/server';
@@ -30,7 +31,9 @@ import { getAssetUrl } from '@/utils/get-asset-url';
 import { userName } from '@/utils/user-name';
 import { PrivateView } from '@/views/private';
 import { PrivateViewHeaderBarActionButton } from '@/views/private';
+import CollabIndicatorHeader from '@/views/private/components/collab/CollabIndicatorHeader.vue';
 import CommentsSidebarDetail from '@/views/private/components/comments-sidebar-detail.vue';
+import ComparisonModal from '@/views/private/components/comparison/comparison-modal.vue';
 import RevisionsSidebarDetail from '@/views/private/components/revisions-sidebar-detail.vue';
 import SaveOptions from '@/views/private/components/save-options.vue';
 
@@ -73,15 +76,22 @@ const {
 	isArchived,
 	validationErrors,
 	refresh,
-} = useItem<User>(
-	ref('directus_users'),
-	primaryKey,
-	props.primaryKey !== '+'
-		? {
-				fields: ['*', 'role.*', 'avatar.id', 'avatar.modified_on'],
-			}
-		: undefined,
-);
+	getItem,
+} = useItem<User>(ref('directus_users'), primaryKey, null, {
+	fields: ['*', 'role.*', 'avatar.id', 'avatar.modified_on'],
+});
+
+const {
+	users: collabUsers,
+	connected,
+	collabContext,
+	collabCollision,
+	update: updateCollab,
+	clearCollidingChanges,
+	discard: discardCollab,
+	focused,
+	connectionId,
+} = useCollab(ref('directus_users'), primaryKey, ref(null), item, edits, getItem);
 
 const {
 	collectionPermissions: { createAllowed, revisionsAllowed },
@@ -103,6 +113,7 @@ const { confirmLeave, leaveTo } = useEditsGuard(hasEdits);
 
 const confirmDelete = ref(false);
 const confirmArchive = ref(false);
+const confirmDiscard = ref(false);
 
 // Provide the discard functionality to field interfaces
 provide('discardAllChanges', discardAndStay);
@@ -257,8 +268,17 @@ function discardAndLeave() {
 }
 
 function discardAndStay() {
-	edits.value = {};
+	if (collabUsers.value.length > 1) {
+		confirmDiscard.value = true;
+	} else {
+		discardAndStayConfirmed();
+	}
+}
+
+function discardAndStayConfirmed() {
+	discardCollab();
 	confirmLeave.value = false;
+	confirmDiscard.value = false;
 }
 
 async function toggleArchive() {
@@ -288,6 +308,13 @@ function revert(values: Record<string, any>) {
 		</template>
 
 		<template #actions>
+			<CollabIndicatorHeader
+				:model-value="collabUsers"
+				:connected="connected"
+				:focuses="focused"
+				:current-connection="connectionId"
+			/>
+
 			<VDialog
 				v-model="confirmDelete"
 				:disabled="deleteAllowed === false"
@@ -419,12 +446,13 @@ function revert(values: Record<string, any>) {
 				:loading="loading"
 				:initial-values="user"
 				:primary-key="primaryKey"
+				:collab-context="collabContext"
 				:validation-errors="validationErrors"
 			/>
 		</div>
 
 		<VDialog v-model="confirmLeave" @esc="confirmLeave = false" @apply="discardAndLeave">
-			<VCard>
+			<VCard v-if="!connected">
 				<VCardTitle>{{ $t('unsaved_changes') }}</VCardTitle>
 				<VCardText>{{ $t('unsaved_changes_copy') }}</VCardText>
 				<VCardActions>
@@ -434,7 +462,43 @@ function revert(values: Record<string, any>) {
 					<VButton @click="confirmLeave = false">{{ $t('keep_editing') }}</VButton>
 				</VCardActions>
 			</VCard>
+			<VCard v-else>
+				<VCardTitle>{{ $t('unsaved_changes_collab') }}</VCardTitle>
+				<VCardText>{{ $t('unsaved_changes_copy_collab') }}</VCardText>
+				<VCardActions>
+					<VButton secondary @click="discardAndLeave">
+						{{ $t('leave_page') }}
+					</VButton>
+					<VButton @click="confirmLeave = false">{{ $t('keep_editing') }}</VButton>
+				</VCardActions>
+			</VCard>
 		</VDialog>
+
+		<VDialog v-model="confirmDiscard" @esc="confirmDiscard = false">
+			<VCard>
+				<VCardTitle>{{ $t('discard_all_changes') }}</VCardTitle>
+				<VCardText>{{ $t('discard_changes_copy_collab') }}</VCardText>
+				<VCardActions>
+					<VButton secondary @click="discardAndStayConfirmed">
+						{{ $t('discard_changes') }}
+					</VButton>
+					<VButton @click="confirmDiscard = false">{{ $t('keep_editing') }}</VButton>
+				</VCardActions>
+			</VCard>
+		</VDialog>
+
+		<ComparisonModal
+			:model-value="collabCollision !== undefined"
+			collection="directus_users"
+			:primary-key="primaryKey"
+			:current-collab="collabCollision"
+			:collab-context="collabContext"
+			mode="collab"
+			:delete-versions-allowed="false"
+			:current-version="null"
+			@confirm="updateCollab"
+			@cancel="clearCollidingChanges"
+		/>
 
 		<template #sidebar>
 			<UserInfoSidebarDetail :is-new="isNew" :user="item" />
@@ -451,6 +515,8 @@ function revert(values: Record<string, any>) {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/mixins';
+
 .action-delete {
 	--v-button-background-color-hover: var(--theme--danger) !important;
 	--v-button-color-hover: var(--white) !important;
@@ -471,11 +537,11 @@ function revert(values: Record<string, any>) {
 	display: flex;
 	align-items: center;
 	max-inline-size: calc(var(--form-column-max-width) * 2 + var(--theme--form--column-gap));
-	block-size: 112px;
+	block-size: 6.3125rem;
 	margin-block-end: var(--theme--form--row-gap);
-	padding: 20px;
+	padding: 1.125rem;
 	background-color: var(--theme--background-normal);
-	border-radius: calc(var(--theme--border-radius) + 4px);
+	border-radius: calc(var(--theme--border-radius) + 0.25rem);
 
 	.avatar {
 		--v-icon-color: var(--theme--foreground-subdued);
@@ -484,9 +550,9 @@ function revert(values: Record<string, any>) {
 		flex-shrink: 0;
 		align-items: center;
 		justify-content: center;
-		inline-size: 84px;
-		block-size: 84px;
-		margin-inline-end: 16px;
+		inline-size: 4.75rem;
+		block-size: 4.75rem;
+		margin-inline-end: 0.875rem;
 		overflow: hidden;
 		background-color: var(--theme--background-normal);
 		border: solid 6px var(--white);
@@ -503,10 +569,10 @@ function revert(values: Record<string, any>) {
 			object-fit: cover;
 		}
 
-		@media (width > 640px) {
-			inline-size: 144px;
-			block-size: 144px;
-			margin-inline-end: 22px;
+		@include mixins.breakpoint-up('sm') {
+			inline-size: 8.125rem;
+			block-size: 8.125rem;
+			margin-inline-end: 1.25rem;
 		}
 	}
 
@@ -515,11 +581,11 @@ function revert(values: Record<string, any>) {
 		overflow: hidden;
 
 		.v-skeleton-loader {
-			inline-size: 175px;
+			inline-size: 9.875rem;
 		}
 
 		.v-skeleton-loader:not(:last-child) {
-			margin-block-end: 16px;
+			margin-block-end: 0.875rem;
 		}
 
 		.v-chip {
@@ -528,7 +594,7 @@ function revert(values: Record<string, any>) {
 			--v-chip-color-hover: var(--theme--foreground-subdued);
 			--v-chip-background-color-hover: var(--theme--background-subdued);
 
-			margin-block-start: 4px;
+			margin-block-start: 0.25rem;
 
 			&.active {
 				--v-chip-color: var(--theme--primary);
@@ -553,8 +619,8 @@ function revert(values: Record<string, any>) {
 		}
 	}
 
-	@media (width > 640px) {
-		block-size: 188px;
+	@include mixins.breakpoint-up('sm') {
+		block-size: 10.5625rem;
 
 		.user-box-content .location {
 			display: block;

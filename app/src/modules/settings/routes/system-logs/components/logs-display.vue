@@ -14,9 +14,13 @@ interface Props {
 	logLevels: Record<string, number>;
 	instances: string[];
 	streamConnected: boolean;
+	showInstance?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+	showInstance: true,
+});
+
 const emit = defineEmits(['logSelected', 'scrolledToBottom', 'scrolledToTop', 'scroll']);
 
 defineExpose({ clearUnreadLogs, incrementUnreadLogs, scrollToBottom, scrollToTop, scrollDownByOne, scrollUpByOne });
@@ -215,7 +219,7 @@ function selectLog(index: number) {
 			<DynamicScrollerItem :item="item" :active="active" :data-index="index" :data-active="active">
 				<div :class="['log-entry', { selected: item.selected }]" @click="selectLog(item.index)">
 					<span class="timestamp">[{{ localizedFormat(item.data.time, `${$t('date-fns_time_24hour')}`) }}]</span>
-					<span v-if="!item.notice" :class="getMessageClasses(['instance'], item)">
+					<span v-if="props.showInstance && !item.notice" :class="getMessageClasses(['instance'], item)">
 						[#{{ instances.indexOf(item.instance) + 1 }}]
 					</span>
 					<span v-if="!item.notice" :class="getMessageClasses(['log-level', logLevelMap[item.data.level] || ''], item)">
@@ -258,14 +262,14 @@ function selectLog(index: number) {
 }
 
 .notice {
-	margin: 6px;
-	padding-inline-start: 6px;
+	margin: 0.3125rem;
+	padding-inline-start: 0.3125rem;
 	font-family: var(--theme--fonts--monospace--font-family);
 	color: var(--theme--foreground-subdued);
 }
 
 .logs-display {
-	min-block-size: 200px;
+	min-block-size: 11.25rem;
 	block-size: 100%;
 	scroll-snap-type: y proximity;
 	align-content: end;
@@ -287,12 +291,12 @@ function selectLog(index: number) {
 	justify-content: space-between;
 	font-family: var(--theme--fonts--monospace--font-family);
 	color: var(--theme--foreground);
-	padding: 6px;
+	padding: 0.3125rem;
 	cursor: pointer;
 }
 
 .log-entry > span {
-	padding: 0 6px;
+	padding: 0 0.3125rem;
 }
 
 .message {
@@ -309,7 +313,7 @@ function selectLog(index: number) {
 .unread-logs {
 	position: relative;
 	inline-size: 100%;
-	inset-block-end: 60px;
+	inset-block-end: 3.375rem;
 	text-align: center;
 }
 
@@ -322,12 +326,12 @@ function selectLog(index: number) {
 	box-shadow: var(--sidebar-shadow);
 
 	.v-icon {
-		margin-inline-end: 8px;
+		margin-inline-end: 0.4375rem;
 	}
 
 	.label {
 		font-weight: bold;
-		font-size: 12px;
+		font-size: 0.6875rem;
 		text-transform: uppercase;
 	}
 }

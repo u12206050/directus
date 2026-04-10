@@ -511,6 +511,8 @@ related_collection: Kapcsolódó gyűjtemény
 related_collections: Kapcsolódó gyűjtemények
 translations_collection: Fordításgyűjtemény
 languages_collection: Nyelvek gyűjteménye
+translations_preview_collections: Gyűjtemények
+translations_preview_fields: Mezők
 import_data_input_placeholder: CSV vagy JSON...
 import_data_button: Importálás indítása
 import_data_indeterminate: Adatok importálása...
@@ -657,7 +659,6 @@ no_collections: Nincsenek gyűjtemények
 create_collection: Gyűjtemény létrehozása
 no_collections_copy_admin: Még nem hoztál létre gyűjteményt. Kattints az alábbi gombra a kezdéshez.
 no_collections_copy: Ön még nem rendelkezik Gyűjteményekkel. Lépjen kapcsolatba a rendszeradminisztrátorral!
-relationship_not_setup: Ez a kapcsolat nincs megfelelően beállítva
 display_template_not_setup: A megjelenítő sablon nem megfelelően van beállítva
 collection_field_not_setup: A gyűjtemény mező opció nem megfelelően van beállítva
 select_a_collection: Gyűjtemény kiválasztása
@@ -763,7 +764,6 @@ unexpected_error: Váratlan hiba történt
 copy_details: Részletek másolása
 no_app_access: Nincs alkalmazás hozzáférés
 no_app_access_copy: Ez a felhasználó nem jogosult az admin alkalmazás használatára.
-password_reset_sent: A jelszó visszaállításához szükséges linket elküldtük Önnek
 password_reset_successful: Sikeres jelszó-visszaállítás
 back: Vissza
 filter: Szűrő
@@ -949,6 +949,14 @@ operation_key_unique_error: A műveleti kulcsoknak egyedinek kell lenniük a fol
 operation_handle_resolve: 'Megoldás: Kattintson a Hozzáadáshoz vagy húzza az átirányításhoz'
 operation_handle_reject: 'Elutasítás: Kattintson a Hozzáadáshoz vagy húzza az átirányításhoz'
 insights: Kimutatások
+deployment:
+  provider:
+    settings:
+      delete_confirm: Ez a művelet végleges és visszavonhatatlan. Biztos, hogy folytatni szeretné?
+    run:
+      cancel_confirm: Ez a művelet végleges és visszavonhatatlan. Biztos, hogy folytatni szeretné?
+  target_value:
+    preview: Előnézet
 dashboard: Irányítópult
 panel: Panel
 panel_options: Panel beállításai
@@ -1245,6 +1253,7 @@ fields:
     transformations_presets: Korlátozza az átalakításokat a beállítások szerint
     image_editor: Képszerkesztő
     custom_aspect_ratios: Egyedi képarányok
+    ai_header_name: Fejléc
   directus_shares:
     name: Név
     role: Szerepkör
@@ -1380,9 +1389,13 @@ ai:
   input: Bevitel
   unknown: Ismeretlen
   prompt_input_placeholder: Írja be az üzenetét ide...
+  items: Elemek
+  content: Ügyvitel
   settings: Beállítások
   tool_approval:
     disabled: Letiltva
+  ask_user_submit: Beküldés
+  ask_user_next: Következő
 ai_tools:
   items: Elemek
   files: Fájlok
@@ -1538,6 +1551,8 @@ interfaces:
     all_opened: Mind nyitva
     accordion_mode: Harmonika mód
     max_one_section_open: Max. egy nyitott szakasz
+  group-tabs:
+    fill_width: Teret kitöltő
   presentation-links:
     presentation-links: Gombok
     style: Stílus
@@ -2241,3 +2256,4 @@ fonts:
   black: Fekete
   italic: Dőlt
   auto: Automatikus
+set_to_now: Mai nap

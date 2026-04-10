@@ -466,6 +466,8 @@ related_collection: Relaterad kollektion
 related_collections: Relaterade kollektioner
 translations_collection: Kollektion för översättningar
 languages_collection: Kollektion med språk
+translations_preview_collections: Kollektioner
+translations_preview_fields: Fält
 import_data_input_placeholder: CSV eller JSON...
 import_data_button: Starta import
 import_data_indeterminate: Importerar data...
@@ -623,7 +625,6 @@ no_collections: Inga kollektioner
 create_collection: Skapa samling
 no_collections_copy_admin: Du har inga kollektioner än. Klicka på knappen nedan för att komma igång.
 no_collections_copy: Du har inga kollektioner än. Kontakta din systemadministratör.
-relationship_not_setup: Relationen har inte konfigurerats korrekt
 display_template_not_setup: Visningsmallens alternativ är felaktigt konfigurerad
 collection_field_not_setup: Kollektionsfältets alternativ är felaktigt konfigurerad
 select_a_collection: Välj en kollektion
@@ -734,7 +735,6 @@ unexpected_error_copy: Ett oväntat fel har uppstått. Försök igen.
 copy_details: Kopiera detaljer
 no_app_access: Ingen appåtkomst
 no_app_access_copy: Den här användaren får inte använda administratörs-appen.
-password_reset_sent: Om du har ett konto har vi skickat en säker länk till dig för att återställa ditt lösenord
 password_reset_successful: Lösenordet har återställts
 back: Tillbaka
 filter: Filtrera
@@ -915,6 +915,15 @@ toggle_editable_elements: Växla redigerbara element
 no_url: Ingen URL angiven
 invalid_url: Ogiltig URL
 insights: Insikter
+deployment:
+  provider:
+    settings:
+      delete_confirm: Denna åtgärd är permanent och kan inte ångras. Är du säker på att du vill fortsätta?
+    run:
+      cancel_confirm: Denna åtgärd är permanent och kan inte ångras. Är du säker på att du vill fortsätta?
+      log_all: Alla loggnivåer
+  target_value:
+    preview: Förhandsgranska
 dashboard: Kontrollpanel
 panel: Panel
 panel_options: Alternativ för panel
@@ -1371,13 +1380,18 @@ live_preview:
   new_window: Öppna i nytt fönster
   close_window: Öppna i delad vy
   toggle_3d: Växla 3D
+  display_options: Visningsalternativ
 unlimited_usage: Obegränsad användning
 ai:
   input: Inmatning
   unknown: Okänd
+  items: Objekt
+  content: Innehåll
   settings: Inställningar
   tool_approval:
     disabled: Inaktiverad
+  ask_user_submit: Skicka
+  ask_user_next: Nästa
 ai_tools:
   items: Objekt
   files: Filer
@@ -1536,6 +1550,8 @@ interfaces:
     all_opened: Alla öppnade
     accordion_mode: Läge för dragspel
     max_one_section_open: Max 1 sektion öppen
+  group-tabs:
+    fill_width: Full bredd
   presentation-links:
     presentation-links: Knappar
     style: Stil
@@ -2152,3 +2168,4 @@ percent: Procent
 show_password: Visa lösenord
 hide_password: Dölj lösenord
 accepted: Accepterad
+set_to_now: Ställ in till nu

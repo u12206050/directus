@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cssVar } from '@directus/utils/browser';
 import Color, { ColorInstance } from 'color';
-import { ComponentPublicInstance, computed, ref, watch } from 'vue';
+import { ComponentPublicInstance, computed, ref, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import VButton from '@/components/v-button.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -10,6 +10,7 @@ import VMenu from '@/components/v-menu.vue';
 import VRemove from '@/components/v-remove.vue';
 import VSelect from '@/components/v-select/v-select.vue';
 import VSlider from '@/components/v-slider.vue';
+import { useFocusin } from '@/composables/use-focusin';
 import { isCssVar as isCssVarUtil } from '@/utils/is-css-var';
 import { isHex } from '@/utils/is-hex';
 
@@ -32,6 +33,9 @@ const props = withDefaults(defineProps<Props>(), {
 	placeholder: undefined,
 	opacity: false,
 });
+
+const menu = useTemplateRef('menu');
+const { active } = useFocusin(menu);
 
 // Reactive translations can't be default values of props
 const presetsWithDefaults = computed(
@@ -311,7 +315,15 @@ function useColor() {
 </script>
 
 <template>
-	<VMenu attached :disabled="disabled" :close-on-content-click="false" no-focus-return>
+	<VMenu
+		ref="menu"
+		v-model="active"
+		v-prevent-focusout="active"
+		attached
+		:disabled="disabled"
+		:close-on-content-click="false"
+		no-focus-return
+	>
 		<template #activator="{ activate, toggle }">
 			<VInput
 				v-model="input"
@@ -491,22 +503,21 @@ function useColor() {
 }
 
 .swatch {
-	--v-button-padding: 6px;
+	--v-button-padding: 0.3125rem;
 	--v-button-background-color: var(--swatch-color, transparent);
 	--v-button-background-color-hover: var(--v-button-background-color);
-	--v-button-height: calc(var(--theme--form--field--input--height) - 20px);
-	--v-button-width: calc(var(--theme--form--field--input--height) - 20px);
-	--swatch-radius: calc(var(--theme--border-radius) + 2px);
-	--focus-ring-offset: var(--focus-ring-offset-inset);
+	--v-button-height: calc(var(--theme--form--field--input--height) - 1.125rem - var(--theme--border-width) * 2);
+	--v-button-width: var(--v-button-height);
+	--swatch-radius: calc(var(--theme--border-radius) + 0.125rem);
+	--focus-ring-offset: 0;
 	--focus-ring-radius: var(--swatch-radius);
 
 	position: relative;
 	box-sizing: border-box;
-	margin-inline-start: -8px;
-	inline-size: calc(var(--theme--form--field--input--height) - 20px);
-	block-size: calc(var(--theme--form--field--input--height) - 20px);
+	margin-inline-start: -0.4375rem;
+	inline-size: calc(var(--theme--form--field--input--height) - 1.125rem);
+	block-size: calc(var(--theme--form--field--input--height) - 1.125rem);
 	border-radius: var(--swatch-radius);
-	overflow: hidden;
 	cursor: pointer;
 
 	&.non-editable {
@@ -517,21 +528,21 @@ function useColor() {
 .presets {
 	display: flex;
 	inline-size: 100%;
-	margin-block-end: 14px;
-	padding: 8px;
+	margin-block-end: 0.8125rem;
+	padding: 0.4375rem;
 	overflow-x: auto;
 }
 
 .presets .preset {
 	--v-button-background-color-hover: var(--v-button-background-color);
-	--v-button-height: 20px;
-	--v-button-width: 20px;
+	--v-button-height: 1.125rem;
+	--v-button-width: 1.125rem;
 
-	margin: 0 4px;
+	margin: 0 0.25rem;
 
 	&.low-contrast {
-		--v-button-height: 18px;
-		--v-button-width: 18px;
+		--v-button-height: 1rem;
+		--v-button-width: 1rem;
 		border: 1px solid var(--theme--form--field--input--border-color-hover);
 	}
 }
@@ -556,11 +567,11 @@ function useColor() {
 	display: grid;
 	gap: 0;
 	inline-size: 100%;
-	padding: 12px 10px;
+	padding: 0.6875rem 0.5625rem;
 }
 
 .color-data-inputs .color-data-input {
-	--v-input-border-radius: 0px;
+	--v-input-border-radius: 0;
 }
 
 .color-data-inputs .color-data-input :deep(.input:focus-within),
@@ -572,7 +583,7 @@ function useColor() {
 }
 
 .color-data-inputs .color-data-input:not(.color-type) {
-	--theme--form--field--input--padding: 12px 8px;
+	--theme--form--field--input--padding: 0.6875rem 0.4375rem;
 }
 
 .color-data-inputs .color-data-input:not(:first-child) :deep(.input) {
@@ -580,11 +591,11 @@ function useColor() {
 }
 
 .color-data-inputs .color-data-input:first-child {
-	--v-input-border-radius: var(--theme--border-radius) 0px 0px var(--theme--border-radius);
+	--v-input-border-radius: var(--theme--border-radius) 0 0 var(--theme--border-radius);
 }
 
 .color-data-inputs .color-data-input:last-child {
-	--v-input-border-radius: 0px var(--theme--border-radius) var(--theme--border-radius) 0px;
+	--v-input-border-radius: 0 var(--theme--border-radius) var(--theme--border-radius) 0;
 }
 
 .color-data-inputs.stacked .color-data-input:not(:first-child) :deep(.input) {
@@ -597,24 +608,24 @@ function useColor() {
 }
 
 .color-data-inputs.stacked .color-data-input:first-child {
-	--v-input-border-radius: var(--theme--border-radius) var(--theme--border-radius) 0px 0px;
+	--v-input-border-radius: var(--theme--border-radius) var(--theme--border-radius) 0 0;
 }
 
 .color-data-inputs.stacked .color-data-input:nth-child(2) {
-	--v-input-border-radius: 0px 0px 0px var(--theme--border-radius);
+	--v-input-border-radius: 0 0 0 var(--theme--border-radius);
 }
 
 .color-data-inputs.stacked .color-data-input:last-child {
-	--v-input-border-radius: 0px 0px var(--theme--border-radius) 0px;
+	--v-input-border-radius: 0 0 var(--theme--border-radius) 0;
 }
 
 .color-data-alphas {
 	display: grid;
-	gap: 12px;
+	gap: 0.6875rem;
 	align-items: baseline;
 	inline-size: 100%;
-	block-size: 45px;
-	padding: 12px 14px;
+	block-size: 2.5625rem;
+	padding: 0.6875rem 0.8125rem;
 }
 
 .color-data-alphas .color-data-alpha {

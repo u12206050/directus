@@ -11,6 +11,7 @@ const props = withDefaults(
 		icon?: string | null;
 		type?: 'info' | 'success' | 'warning' | 'error';
 		showClose?: boolean;
+		showReload?: boolean;
 		loading?: boolean;
 		progress?: number;
 		alwaysShowText?: boolean;
@@ -34,6 +35,10 @@ const done = async () => {
 		notificationsStore.remove(props.id);
 	}
 };
+
+function reload() {
+	window.location.reload();
+}
 </script>
 
 <template>
@@ -47,6 +52,10 @@ const done = async () => {
 		<div class="content">
 			<p class="title">{{ title }}</p>
 			<p v-if="text" class="text">{{ text }}</p>
+			<button v-if="showReload" class="reload" @click="reload">
+				{{ $t('reload_page') }}
+				<VIcon name="restore_page" clickable />
+			</button>
 		</div>
 
 		<VIcon
@@ -66,13 +75,13 @@ const done = async () => {
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
-	margin-block-start: 4px;
-	padding: 12px;
+	margin-block-start: 0.25rem;
+	padding: 0.6875rem;
 	color: var(--white);
 	border-radius: var(--theme--border-radius);
 	inline-size: max-content;
 	max-inline-size: 100%;
-	min-block-size: 44px;
+	min-block-size: 2.5rem;
 
 	.icon {
 		display: block;
@@ -83,7 +92,7 @@ const done = async () => {
 		border-radius: 50%;
 		inline-size: auto;
 		block-size: auto;
-		margin-inline-end: 8px;
+		margin-inline-end: 0.4375rem;
 		background-color: transparent;
 	}
 
@@ -101,14 +110,14 @@ const done = async () => {
 
 	&::after {
 		position: absolute;
-		inset-inline-end: 12px;
-		inset-block-end: -5px;
+		inset-inline-end: 0.6875rem;
+		inset-block-end: -0.3125rem;
 		z-index: -1;
 		display: block;
-		inline-size: 20px;
-		block-size: 20px;
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
 		border-radius: 2px;
-		transform: rotate(45deg) translate(-5px, -5px);
+		transform: rotate(45deg) translate(-0.3125rem, -0.3125rem);
 		transition: transform var(--slow) var(--transition);
 		content: '';
 		pointer-events: none;
@@ -152,7 +161,12 @@ const done = async () => {
 }
 
 .close {
-	margin-inline-start: 12px;
+	margin-inline-start: 0.6875rem;
+}
+
+.reload {
+	display: block;
+	margin-inline-start: auto;
 }
 
 .v-progress-circular {

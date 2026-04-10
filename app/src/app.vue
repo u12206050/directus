@@ -11,7 +11,6 @@ import VButton from '@/components/v-button.vue';
 import VError from '@/components/v-error.vue';
 import VInfo from '@/components/v-info.vue';
 import VProgressCircular from '@/components/v-progress-circular.vue';
-import { useSystem } from '@/composables/use-system';
 import { useServerStore } from '@/stores/server';
 import { generateFavicon } from '@/utils/generate-favicon';
 import { getAssetUrl } from '@/utils/get-asset-url';
@@ -86,8 +85,6 @@ const error = computed(() => appStore.error);
 const reload = () => {
 	window.location.reload();
 };
-
-useSystem();
 </script>
 
 <template>
@@ -139,7 +136,7 @@ useSystem();
 	justify-content: center;
 	inline-size: 100%;
 	block-size: 100%;
-	backdrop-filter: blur(10px);
+	backdrop-filter: blur(0.5625rem);
 }
 
 .fade-enter-active,
@@ -153,6 +150,6 @@ useSystem();
 }
 
 .error {
-	margin-block-end: 24px;
+	margin-block-end: 1.375rem;
 }
 </style>

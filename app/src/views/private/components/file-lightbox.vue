@@ -7,6 +7,7 @@ import FilePreview, { type Props as FilePreviewProps } from '@/views/private/com
 
 interface Props extends FilePreviewProps {
 	modelValue: boolean;
+	src?: string;
 }
 
 const props = defineProps<Props>();
@@ -24,7 +25,7 @@ const internalModelValue = useSync(props, 'modelValue', emit);
 			<slot name="activator" v-bind="activatorBinding" />
 		</template>
 
-		<FilePreview :file="file" :preset="null" in-modal @click="internalModelValue = false" />
+		<FilePreview :file="file" :src="src" :preset="null" in-modal @click="internalModelValue = false" />
 
 		<VButton class="close" icon rounded @click="internalModelValue = false">
 			<VIcon name="close" />
@@ -46,7 +47,7 @@ const internalModelValue = useSync(props, 'modelValue', emit);
 	--v-button-color-hover: var(--theme--foreground);
 
 	position: absolute;
-	inset-block-start: 32px;
-	inset-inline-end: 32px;
+	inset-block-start: 1.8125rem;
+	inset-inline-end: 1.8125rem;
 }
 </style>

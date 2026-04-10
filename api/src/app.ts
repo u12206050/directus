@@ -11,7 +11,10 @@ import type { Request, RequestHandler, Response } from 'express';
 import express from 'express';
 import { merge } from 'lodash-es';
 import qs from 'qs';
-import { aiChatRouter } from './ai/chat/router.js';
+import { aiRouter } from './ai/chat/router.js';
+import { initAIDevTools } from './ai/devtools/index.js';
+import { aiFilesRouter } from './ai/files/router.js';
+import { initAITelemetry } from './ai/telemetry/index.js';
 import { registerAuthProviders } from './auth.js';
 import accessRouter from './controllers/access.js';
 import activityRouter from './controllers/activity.js';
@@ -20,6 +23,8 @@ import authRouter from './controllers/auth.js';
 import collectionsRouter from './controllers/collections.js';
 import commentsRouter from './controllers/comments.js';
 import dashboardsRouter from './controllers/dashboards.js';
+import deploymentWebhookRouter from './controllers/deployment-webhooks.js';
+import deploymentRouter from './controllers/deployment.js';
 import extensionsRouter from './controllers/extensions.js';
 import fieldsRouter from './controllers/fields.js';
 import filesRouter from './controllers/files.js';
@@ -54,6 +59,7 @@ import {
 	validateDatabaseExtensions,
 	validateMigrations,
 } from './database/index.js';
+import { ensureDeploymentWebhooks, registerDeploymentDrivers } from './deployment.js';
 import emitter from './emitter.js';
 import { getExtensionManager } from './extensions/index.js';
 import { getFlowManager } from './flows.js';
@@ -65,6 +71,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import extractToken from './middleware/extract-token.js';
 import rateLimiterGlobal from './middleware/rate-limiter-global.js';
 import rateLimiter from './middleware/rate-limiter-ip.js';
+import requestCounter from './middleware/request-counter.js';
 import sanitizeQuery from './middleware/sanitize-query.js';
 import schema from './middleware/schema.js';
 import metricsSchedule from './schedules/metrics.js';
@@ -114,6 +121,8 @@ export default async function createApp(): Promise<express.Application> {
 	await validateStorage();
 
 	await registerAuthProviders();
+	registerDeploymentDrivers();
+	await ensureDeploymentWebhooks();
 
 	const extensionManager = getExtensionManager();
 	const flowManager = getFlowManager();
@@ -125,7 +134,13 @@ export default async function createApp(): Promise<express.Application> {
 
 	app.disable('x-powered-by');
 	app.set('trust proxy', env['IP_TRUST_PROXY']);
-	app.set('query parser', (str: string) => qs.parse(str, { depth: Number(env['QUERYSTRING_MAX_PARSE_DEPTH']) }));
+
+	app.set('query parser', (str: string) =>
+		qs.parse(str, {
+			depth: Number(env['QUERYSTRING_MAX_PARSE_DEPTH']),
+			arrayLimit: Number(env['QUERYSTRING_ARRAY_LIMIT']),
+		}),
+	);
 
 	if (env['PRESSURE_LIMITER_ENABLED']) {
 		const sampleInterval = Number(env['PRESSURE_LIMITER_SAMPLE_INTERVAL']);
@@ -180,6 +195,17 @@ export default async function createApp(): Promise<express.Application> {
 		),
 	);
 
+	if (env['CROSS_ORIGIN_OPENER_POLICY_ENABLED']) {
+		app.use(
+			helmet.crossOriginOpenerPolicy({
+				policy: (env['CROSS_ORIGIN_OPENER_POLICY'] ?? 'same-origin-allow-popups') as
+					| 'same-origin'
+					| 'same-origin-allow-popups'
+					| 'unsafe-none',
+			}),
+		);
+	}
+
 	if (env['HSTS_ENABLED']) {
 		app.use(helmet.hsts(getConfigFromEnv('HSTS_', { omitPrefix: 'HSTS_ENABLED' })));
 	}
@@ -203,6 +229,9 @@ export default async function createApp(): Promise<express.Application> {
 		(
 			express.json({
 				limit: env['MAX_PAYLOAD_SIZE'] as string,
+				verify: (req, _res, buf) => {
+					(req as any).rawBody = buf;
+				},
 			}) as RequestHandler
 		)(req, res, (err: any) => {
 			if (err) {
@@ -272,11 +301,16 @@ export default async function createApp(): Promise<express.Application> {
 
 	app.get('/server/ping', (_req, res) => res.send('pong'));
 
+	// Public webhook endpoint (signature-verified by the provider)
+	app.use('/deployments/webhooks', deploymentWebhookRouter);
+
 	app.use(authenticate);
 
 	app.use(schema);
 
 	app.use(sanitizeQuery);
+
+	app.use(requestCounter);
 
 	app.use(cache);
 
@@ -294,6 +328,7 @@ export default async function createApp(): Promise<express.Application> {
 	app.use('/collections', collectionsRouter);
 	app.use('/comments', commentsRouter);
 	app.use('/dashboards', dashboardsRouter);
+	app.use('/deployments', deploymentRouter);
 	app.use('/extensions', extensionsRouter);
 	app.use('/fields', fieldsRouter);
 
@@ -311,7 +346,10 @@ export default async function createApp(): Promise<express.Application> {
 	}
 
 	if (toBoolean(env['AI_ENABLED']) === true) {
-		app.use('/ai/chat', aiChatRouter);
+		await initAIDevTools();
+		await initAITelemetry();
+		app.use('/ai', aiRouter);
+		app.use('/ai/files', aiFilesRouter);
 	}
 
 	if (env['METRICS_ENABLED'] === true) {

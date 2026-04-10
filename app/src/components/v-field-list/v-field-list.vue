@@ -104,7 +104,10 @@ const treeList = computed(() => {
 });
 
 const addAll = () => {
-	const allFields = unref(treeList).map((field) => field.field);
+	const allFields = unref(treeList)
+		.filter((field) => field.type !== 'alias')
+		.map((field) => field.field);
+
 	emit('add', unref(allFields));
 };
 
@@ -184,6 +187,6 @@ function filter(field: Field, parent?: FieldNode): boolean {
 
 <style lang="scss" scoped>
 .v-list {
-	--v-list-min-width: 300px;
+	--v-list-min-width: 16.875rem;
 }
 </style>

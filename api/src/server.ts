@@ -10,10 +10,12 @@ import { createTerminus } from '@godaddy/terminus';
 import type { Request } from 'express';
 import { once } from 'lodash-es';
 import qs from 'qs';
+import { shutdownAITelemetry } from './ai/telemetry/index.js';
 import createApp from './app.js';
 import getDatabase from './database/index.js';
 import emitter from './emitter.js';
 import { useLogger } from './logger/index.js';
+import { terminateAllBufferedCounters } from './telemetry/counter/use-buffered-counter.js';
 import { getAddress } from './utils/get-address.js';
 import { getConfigFromEnv } from './utils/get-config-from-env.js';
 import { getIPFromReq } from './utils/get-ip-from-req.js';
@@ -25,7 +27,7 @@ import {
 	getSubscriptionController,
 	getWebSocketController,
 } from './websocket/controllers/index.js';
-import { startWebSocketHandlers } from './websocket/handlers/index.js';
+import { getCollabHandler, startWebSocketHandlers } from './websocket/handlers/index.js';
 
 export let SERVER_ONLINE = true;
 
@@ -134,6 +136,9 @@ export async function createServer(): Promise<http.Server> {
 		getSubscriptionController()?.terminate();
 		getWebSocketController()?.terminate();
 		getLogsController()?.terminate();
+		await getCollabHandler()?.terminate();
+		await terminateAllBufferedCounters();
+		await shutdownAITelemetry();
 
 		const database = getDatabase();
 		await database.destroy();

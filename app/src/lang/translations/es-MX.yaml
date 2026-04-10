@@ -474,6 +474,8 @@ related_collection: Colección Relacionada
 related_collections: Colecciones Relacionadas
 translations_collection: Traducción de Colección
 languages_collection: Colección de Idiomas
+translations_preview_collections: Colecciones
+translations_preview_fields: Campos
 import_data_input_placeholder: CSV o JSON...
 import_data_button: Iniciar importación
 import_data_indeterminate: Importando datos...
@@ -652,7 +654,6 @@ no_collections: Sin colecciones
 create_collection: Crear colección
 no_collections_copy_admin: Aún no tiene alguna Colección. Haga clic en el botón para empezar.
 no_collections_copy: Aún no tiene alguna Colección. Por favor contacte al administrador del sistema.
-relationship_not_setup: La relación no se ha configurado correctamente
 no_singleton_relations: No se admiten las relaciones con Singletons
 display_template_not_setup: La opción de plantilla de Presentación está mal configurada
 collection_field_not_setup: La opción del campo de colección está mal configurada
@@ -771,7 +772,6 @@ unexpected_error_copy: Ha ocurrido un error inesperado. Por favor, intenta de nu
 copy_details: Copiar Detalles
 no_app_access: Sin acceso a la aplicación
 no_app_access_copy: Este usuario no tiene permitido usar la aplicación de administración.
-password_reset_sent: Si tienes una cuenta, te hemos enviado un enlace seguro para restablecer tu contraseña
 password_reset_successful: Contraseña restablecida exitósamente
 back: Volver
 filter: Filtro
@@ -980,6 +980,15 @@ no_url_copy: Por favor añada una URL en la configuración.
 invalid_url: URL no válida
 invalid_url_copy: La URL especificada no coincide con ninguna URL especificada en la configuración.
 insights: Informes
+deployment:
+  provider:
+    settings:
+      delete_confirm: Esta acción es permanente y no se puede deshacer. ¿Está seguro de que desea continuar?
+    run:
+      cancel_confirm: Esta acción es permanente y no se puede deshacer. ¿Está seguro de que desea continuar?
+      log_all: Todos los niveles de registro
+  target_value:
+    preview: Vista previa
 dashboard: Tablero
 panel: Panel
 panel_options: Opciones del Panel
@@ -1353,6 +1362,7 @@ fields:
     public_registration_verify_email: Verificar E-mail
     public_registration_verify_email_note: Envía un correo electrónico al usuario registrado pidiéndole que haga clic en un enlace de verificación antes de poder iniciar sesión.
     visual_editor_urls: URLs del editor visual
+    ai_header_name: Encabezado
   directus_shares:
     name: Nombre
     role: Rol
@@ -1506,6 +1516,7 @@ live_preview:
   close_window: Abrir en vista dividida
   toggle_3d: Alterna 3D
   iframe_title: Vista previa del sitio web en vivo
+  display_options: Opciones de Visualización
 shares: Compartido
 unlimited_usage: Uso ilimitado
 uses_left: Sin usos restantes | Un uso restante | {n} usos restantes
@@ -1514,9 +1525,13 @@ new_share: Nueva parte
 ai:
   input: Entrada
   unknown: Desconocido
+  items: Elementos
+  content: Contenido
   settings: Ajustes
   tool_approval:
     disabled: Desactivado
+  ask_user_submit: Enviar
+  ask_user_next: Siguiente
 ai_tools:
   items: Elementos
   files: Archivos
@@ -1695,6 +1710,8 @@ interfaces:
     all_opened: Todo Abierto
     accordion_mode: Modo Accordion
     max_one_section_open: Máximo de una sección abierta
+  group-tabs:
+    fill_width: Ancho completo
   presentation-links:
     presentation-links: Botones
     style: Estilo
@@ -2486,3 +2503,4 @@ accepted: Aceptado
 text_direction_auto: Automático (coincidir idioma)
 text_direction_ltr: Izquierda a derecha (LTR)
 text_direction_rtl: Derecha a izquierda (RTL)
+set_to_now: Establecer ahora

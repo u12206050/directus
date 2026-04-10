@@ -9,6 +9,7 @@ import type { Accountability } from './accountability.js';
 import type { TransformationSet } from './assets.js';
 import type { LoginResult } from './authentication.js';
 import type { ApiCollection, RawCollection } from './collection.js';
+import type { DeploymentConfig, Project, ProviderType, StoredProject } from './deployment.js';
 import type { ActionHandler } from './events.js';
 import type { ApiOutput, ExtensionManager, ExtensionSettings } from './extensions/index.js';
 import type { Field, RawField, Type } from './fields.js';
@@ -18,7 +19,7 @@ import type { GQLScope, GraphQLParams } from './graphql.js';
 import type { ExportFormat } from './import-export.js';
 import type { Item, MutationOptions, PrimaryKey, QueryOptions } from './items.js';
 import type { EmailOptions } from './mail.js';
-import type { DeepPartial } from './misc.js';
+import type { CachedResult, DeepPartial } from './misc.js';
 import type { Notification } from './notifications.js';
 import type { PayloadAction, PayloadServiceProcessRelationResult } from './payload.js';
 import type { ItemPermissions } from './permissions.js';
@@ -30,7 +31,7 @@ import type { Snapshot, SnapshotDiff, SnapshotDiffWithHash, SnapshotWithHash } f
 import type { Range, Stat } from './storage.js';
 import type { RegisterUserInput } from './users.js';
 import type { ContentVersion } from './versions.js';
-import type { WebSocketClient, WebSocketMessage } from './websockets.js';
+import type { WebSocketClient, WebSocketMessage } from './websockets/index.js';
 
 export type AbstractServiceOptions = {
 	knex?: Knex | undefined;
@@ -216,7 +217,7 @@ interface FileService<T = File> {
 	 */
 	uploadOne(
 		stream: BusboyFileStream | Readable,
-		data: Partial<T> & { storage: string },
+		data: Partial<T>,
 		primaryKey?: PrimaryKey,
 		opts?: MutationOptions,
 	): Promise<PrimaryKey>;
@@ -343,7 +344,7 @@ interface PayloadService {
 		parent: PrimaryKey,
 		opts?: MutationOptions,
 	): Promise<PayloadServiceProcessRelationResult>;
-	prepareDelta(data: Partial<Item>): Promise<string | null>;
+	prepareDelta(data: Partial<Item>): Promise<Partial<Item> | null>;
 }
 
 /**
@@ -448,6 +449,29 @@ interface TFAService {
 	generateTFA(key: PrimaryKey): Promise<Record<string, string>>;
 	enableTFA(key: PrimaryKey, otp: string, secret: string): Promise<void>;
 	disableTFA(key: PrimaryKey): Promise<void>;
+}
+
+/**
+ * The DeploymentService
+ */
+interface DeploymentService {
+	readByProvider(provider: ProviderType, query?: Query): Promise<DeploymentConfig>;
+	updateByProvider(provider: ProviderType, data: Partial<DeploymentConfig>): Promise<PrimaryKey>;
+	deleteByProvider(provider: ProviderType): Promise<PrimaryKey>;
+	getDriver(provider: ProviderType): Promise<unknown>;
+	listProviderProjects(provider: ProviderType): Promise<CachedResult<Project[]>>;
+	getProviderProject(provider: ProviderType, projectId: string): Promise<CachedResult<Project>>;
+}
+
+/**
+ * The DeploymentProjectsService
+ */
+interface DeploymentProjectsService {
+	updateSelection(
+		provider: ProviderType,
+		create: { external_id: string; name: string }[],
+		deleteIds: PrimaryKey[],
+	): Promise<StoredProject[]>;
 }
 
 /**
@@ -613,6 +637,18 @@ export interface ExtensionsServices {
 	 * The DashboardsService
 	 */
 	DashboardsService: new (options: AbstractServiceOptions) => AbstractService;
+	/**
+	 * The DeploymentService
+	 */
+	DeploymentService: new (options: AbstractServiceOptions) => AbstractService & DeploymentService;
+	/**
+	 * The DeploymentProjectsService
+	 */
+	DeploymentProjectsService: new (options: AbstractServiceOptions) => AbstractService & DeploymentProjectsService;
+	/**
+	 * The DeploymentRunsService
+	 */
+	DeploymentRunsService: new (options: AbstractServiceOptions) => AbstractService;
 	/**
 	 * The ExportService
 	 */

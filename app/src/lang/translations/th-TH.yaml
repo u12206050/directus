@@ -287,6 +287,7 @@ related_collection: คอลเลกชันที่เกี่ยวข้
 related_collections: คอลเลกชันที่เกี่ยวข้อง
 translations_collection: การแปลตาราง
 languages_collection: คอลเลกชันภาษา
+translations_preview_collections: คอลเลกชัน
 import_data_input_placeholder: CSV หรือ JSON
 import_data_button: เริ่มการนำเข้า
 import_data_indeterminate: กำลังนำเข้าข้อมูล...
@@ -426,7 +427,6 @@ no_collections: ไม่มีคอลเลกชัน
 create_collection: สร้างคอลเลกชัน
 no_collections_copy_admin: ยังไม่มีคอลเลกชันใดๆ คลิ๊กที่ปุ่มด้านล่างเพื่อสร้าง
 no_collections_copy: ยังไม่มีคอลเลกชันใดๆ กรุณาติดต่อผู้ดูแลระบบ
-relationship_not_setup: ความสัมพันธ์ยังไม่ถูกตั้งค่าให้ถูกต้อง
 display_template_not_setup: การตั้งค่าของการแสดงผลไม่ถูกต้อง
 collection_field_not_setup: การตั้งค่าของฟิลด์ยังไม่ถูกต้อง
 select_a_collection: เลือกคอลเลกชัน
@@ -641,6 +641,14 @@ flow_name: ชื่อ
 flow_tracking_activity: ติดตามกิจกรรมเท่านั้น
 flow_tracking_null: อย่าติดตามอะไรเลย
 code: โค้ด
+deployment:
+  provider:
+    settings:
+      delete_confirm: การกระทำนี้ถาวร และไม่สามรถย้อนกลับได้ คุณยังต้องการจะทำต่อหรือไม่?
+    run:
+      cancel_confirm: การกระทำนี้ถาวร และไม่สามรถย้อนกลับได้ คุณยังต้องการจะทำต่อหรือไม่?
+  target_value:
+    preview: ดูตัวอย่าง
 dashboard: แดชบอร์ด
 panel: แพแนล
 panel_options: ตัวเลือกแพแนล
@@ -864,6 +872,7 @@ fields:
     storage_default_folder: โฟลเดอร์เริ่มต้น
     custom_css: CSS ที่กำหนดเอง
     module_bar: โมดูลบาร์
+    ai_header_name: เฮดเดอร์
   directus_shares:
     name: ชื่อ
     role: บทบาท
@@ -934,9 +943,13 @@ live_preview:
   new_window: เปิดในหน้าต่างใหม่
 ai:
   input: Input
+  items: รายการ
+  content: เนื้อหา
   settings: การตั้งค่า
   tool_approval:
     disabled: ปิดใช้งาน
+  ask_user_submit: ส่งข้อมูล
+  ask_user_next: ถัดไป
 ai_tools:
   items: รายการ
   files: ไฟล์
@@ -1025,6 +1038,8 @@ interfaces:
     and: และ
   group-accordion:
     start: เริ่มต้น
+  group-tabs:
+    fill_width: กว้างเติมเต็ม
   presentation-links:
     presentation-links: ปุ่ม
     style: สไตล์
@@ -1442,3 +1457,4 @@ fonts:
   bold: ตัวหนา
   italic: ตัวเอียง
   auto: อัตโนมัติ
+set_to_now: ตั้งค่าเป็นตอนนี้

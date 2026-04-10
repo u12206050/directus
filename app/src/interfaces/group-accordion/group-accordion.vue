@@ -5,6 +5,8 @@ import { ref, watch } from 'vue';
 import AccordionSection from './accordion-section.vue';
 import type { ComparisonContext } from '@/components/v-form/types';
 import VItemGroup from '@/components/v-item-group.vue';
+import { CollabContext } from '@/composables/use-collab';
+import type { ContentVersionMaybeNew } from '@/types/versions';
 
 const props = withDefaults(
 	defineProps<{
@@ -16,6 +18,7 @@ const props = withDefaults(
 		nonEditable?: boolean;
 		batchMode?: boolean;
 		batchActiveFields?: string[];
+		collabContext?: CollabContext;
 		comparison?: ComparisonContext;
 		primaryKey: string | number;
 		loading?: boolean;
@@ -25,6 +28,7 @@ const props = withDefaults(
 		accordionMode?: boolean;
 		start?: 'opened' | 'closed' | 'first';
 		direction?: string;
+		version?: ContentVersionMaybeNew | null;
 	}>(),
 	{
 		batchActiveFields: () => [],
@@ -126,6 +130,7 @@ function useComputedGroup() {
 			:batch-mode="batchMode"
 			:batch-active-fields="batchActiveFields"
 			:comparison="comparison"
+			:collab-context="collabContext"
 			:primary-key="primaryKey"
 			:loading="loading"
 			:validation-errors="validationErrors"
@@ -134,6 +139,7 @@ function useComputedGroup() {
 			:group="field.meta!.field"
 			:multiple="accordionMode === false"
 			:direction="direction"
+			:version="version"
 			@apply="$emit('apply', $event)"
 			@toggle-all="toggleAll"
 		/>
