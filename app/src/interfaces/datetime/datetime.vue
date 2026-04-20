@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { adjustDate } from '@directus/utils';
+import { DateValue, parseAbsolute } from '@internationalized/date';
 import { isValid, parseISO } from 'date-fns';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
-import { computed, ref, useTemplateRef } from 'vue';
+import { get } from 'lodash';
+import { computed, ComputedRef, inject, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import UseDatetime, { type Props as UseDatetimeProps } from '@/components/use-datetime.vue';
 import VDatePicker from '@/components/v-date-picker/v-date-picker.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -14,6 +17,8 @@ interface Props extends Omit<UseDatetimeProps, 'value'> {
 	value: string | null;
 	disabled?: boolean;
 	nonEditable?: boolean;
+	minField?: string;
+	maxField?: string;
 	tz?: string;
 }
 
@@ -32,6 +37,9 @@ const emit = defineEmits<{
 
 const menuActive = ref(false);
 const dateTimeMenu = useTemplateRef('dateTimeMenu');
+const values = inject('values') as ComputedRef<Record<string, any>>;
+const min = useDateFieldOrDynamic(props.minField);
+const max = useDateFieldOrDynamic(props.maxField);
 
 const isValidValue = computed(() => (props.value ? isValid(parseDate(props.value, props.type)) : false));
 
@@ -39,10 +47,6 @@ function unsetValue(e: Event) {
 	e.preventDefault();
 	e.stopPropagation();
 	emit('input', null);
-}
-
-function closeDatePicker() {
-	dateTimeMenu.value?.deactivate();
 }
 
 // Computed property for date-picker value with timezone conversion
@@ -72,6 +76,46 @@ const tzValue = computed({
 		emit('input', value);
 	},
 });
+
+function useDateFieldOrDynamic(value?: string) {
+	if (!value) return undefined;
+	
+	const val = ref<DateValue | undefined>(undefined);
+
+	if (value.startsWith('$NOW')) {
+		val.value = dateToValue(parse$NOW(value));
+
+		const interval = setInterval(() => {
+			val.value = dateToValue(parse$NOW(value));
+		}, 60000);
+
+		onUnmounted(() => {
+			if (interval) clearInterval(interval);
+		});
+	} else {
+		watch(values, (form) => {
+			const v = get(form, value);
+			if (v) {
+				val.value = dateToValue(new Date(v));
+			} else val.value = undefined;
+		}, { immediate: true });
+	}
+
+	return val;
+}
+
+function dateToValue(date: Date) {
+	return parseAbsolute(date.toISOString(), props.tz || 'UTC');
+}
+
+function parse$NOW(value: string) {
+	if (value.includes('(') && value.includes(')')) {
+		const adjustment = value.match(/\(([^)]+)\)/)?.[1];
+		if (adjustment) return adjustDate(new Date(), adjustment)!;
+	}
+
+	return new Date();
+}
 </script>
 
 <template>
@@ -104,13 +148,14 @@ const tzValue = computed({
 		</template>
 
 		<VDatePicker
+			v-model="tzValue"
 			:type
 			:disabled
 			:include-seconds
 			:use-24
-			:model-value="tzValue"
-			@update:model-value="tzValue = $event"
-			@close="closeDatePicker"
+			:min="min"
+			:max="max"
+			@close="dateTimeMenu?.deactivate"
 		/>
 	</VMenu>
 </template>
@@ -144,6 +189,12 @@ const tzValue = computed({
 	&:hover,
 	&.active {
 		--v-icon-color: var(--theme--primary);
+	}
+
+	&.timezone-icon {
+		margin-inline-end: 4px;
+
+		--v-icon-color: var(--theme--secondary);
 	}
 }
 

@@ -66,6 +66,7 @@ import VTextarea from './v-textarea.vue';
 import VUpload from './v-upload.vue';
 import VWorkspaceTile from './v-workspace-tile.vue';
 import VWorkspace from './v-workspace.vue';
+import InsightsDashboard from '@/modules/insights/routes/dashboard.vue';
 import DrawerBatch from '@/views/private/components/drawer-batch.vue';
 import DrawerCollection from '@/views/private/components/drawer-collection.vue';
 import DrawerFiles from '@/views/private/components/drawer-files.vue';
@@ -157,4 +158,6 @@ export function registerComponents(app: App): void {
 	app.component('DrawerFiles', DrawerFiles);
 	app.component('DrawerItem', DrawerItem);
 	app.component('DrawerBatch', DrawerBatch);
+
+	app.component('InsightsDashboard', InsightsDashboard);
 }

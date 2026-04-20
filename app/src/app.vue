@@ -30,7 +30,7 @@ const brandStyleCss = computed(() => {
 useHead({
 	style: [{ textContent: brandStyleCss }],
 	title: 'Directus',
-	titleTemplate: '%s · %projectName',
+	titleTemplate: '%projectName',
 	templateParams: {
 		projectName: computed(() => serverStore.info?.project?.project_name ?? 'Directus'),
 	},
