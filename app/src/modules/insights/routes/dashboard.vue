@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useShortcut } from '@directus/composables';
 import { applyOptionsData } from '@directus/utils';
+import { createReusableTemplate } from '@vueuse/core';
 import { assign, isEmpty } from 'lodash-es';
 import { computed, ref, toRefs, unref, watch } from 'vue';
 import { RouterView } from 'vue-router';
@@ -35,9 +36,12 @@ const props = withDefaults(
 	defineProps<{
 		primaryKey: string;
 		panelKey?: string | null;
+		viewOnly?: boolean;
 	}>(),
-	{ panelKey: null },
+	{ panelKey: null, viewOnly: false },
 );
+
+const [DefineTemplate, ReuseTemplate] = createReusableTemplate();
 
 const { panels: panelsInfo } = useExtensions();
 
@@ -215,69 +219,7 @@ const refreshInterval = computed({
 </script>
 
 <template>
-	<InsightsNotFound v-if="!currentDashboard" />
-	<PrivateView v-else :title="currentDashboard.name" :icon="currentDashboard.icon">
-		<template #actions>
-			<template v-if="editMode">
-				<PrivateViewHeaderBarActionButton
-					v-tooltip.bottom="$t('clear_changes')"
-					kind="danger"
-					variant="ghost"
-					icon="undo"
-					@click="cancelChanges"
-				/>
-			</template>
-
-			<template v-else>
-				<PrivateViewHeaderBarActionButton
-					v-tooltip.bottom="$t('fit_to_screen')"
-					:active="zoomToFit"
-					class="zoom-to-fit"
-					variant="ghost"
-					icon="aspect_ratio"
-					@click="toggleZoomToFit"
-				/>
-			</template>
-		</template>
-
-		<template #actions:primary>
-			<template v-if="editMode">
-				<PrivateViewHeaderBarActionButton
-					:label="$t('create_panel')"
-					secondary
-					:to="{ name: 'panel-detail', params: { primaryKey: currentDashboard.id, panelKey: '+' } }"
-					icon="add"
-				/>
-
-				<PrivateViewHeaderBarActionButton
-					:label="$t('save')"
-					:disabled="!hasEdits"
-					:loading="saving"
-					icon="check"
-					@click="saveChanges"
-				/>
-			</template>
-
-			<PrivateViewHeaderBarActionButton
-				v-else
-				:label="$t('edit_panels')"
-				class="edit"
-				:disabled="!updateAllowed"
-				icon="edit"
-				@click="editMode = !editMode"
-			/>
-		</template>
-
-		<template #sidebar>
-			<CommentsSidebarDetail :key="primaryKey" collection="directus_dashboards" :primary-key="primaryKey" />
-
-			<RefreshSidebarDetail v-model="refreshInterval" @refresh="insightsStore.refresh(primaryKey)" />
-		</template>
-
-		<template #navigation>
-			<InsightsNavigation />
-		</template>
-
+	<DefineTemplate>
 		<VWorkspace
 			:edit-mode="editMode"
 			:tiles="tiles"
@@ -340,6 +282,73 @@ const refreshInterval = computed({
 				</div>
 			</template>
 		</VWorkspace>
+	</DefineTemplate>
+
+	<InsightsNotFound v-if="!currentDashboard" />
+	<ReuseTemplate v-else-if="viewOnly" />
+	<PrivateView v-else :title="currentDashboard.name" :icon="currentDashboard.icon">
+		<template #actions>
+			<template v-if="editMode">
+				<PrivateViewHeaderBarActionButton
+					v-tooltip.bottom="$t('clear_changes')"
+					kind="danger"
+					variant="ghost"
+					icon="undo"
+					@click="cancelChanges"
+				/>
+			</template>
+
+			<template v-else>
+				<PrivateViewHeaderBarActionButton
+					v-tooltip.bottom="$t('fit_to_screen')"
+					:active="zoomToFit"
+					class="zoom-to-fit"
+					variant="ghost"
+					icon="aspect_ratio"
+					@click="toggleZoomToFit"
+				/>
+			</template>
+		</template>
+
+		<template #actions:primary>
+			<template v-if="editMode">
+				<PrivateViewHeaderBarActionButton
+					:label="$t('create_panel')"
+					secondary
+					:to="{ name: 'panel-detail', params: { primaryKey: currentDashboard.id, panelKey: '+' } }"
+					icon="add"
+				/>
+
+				<PrivateViewHeaderBarActionButton
+					:label="$t('save')"
+					:disabled="!hasEdits"
+					:loading="saving"
+					icon="check"
+					@click="saveChanges"
+				/>
+			</template>
+
+			<PrivateViewHeaderBarActionButton
+				v-else
+				:label="$t('edit_panels')"
+				class="edit"
+				:disabled="!updateAllowed"
+				icon="edit"
+				@click="editMode = !editMode"
+			/>
+		</template>
+
+		<template #sidebar>
+			<CommentsSidebarDetail :key="primaryKey" collection="directus_dashboards" :primary-key="primaryKey" />
+
+			<RefreshSidebarDetail v-model="refreshInterval" @refresh="insightsStore.refresh(primaryKey)" />
+		</template>
+
+		<template #navigation>
+			<InsightsNavigation />
+		</template>
+
+		<ReuseTemplate />
 
 		<RouterView name="detail" :dashboard-key="primaryKey" :panel-key="panelKey" />
 
