@@ -2,7 +2,7 @@
 defineOptions({ inheritAttrs: false });
 
 import type { Field } from '@directus/types';
-import { sortBy } from 'lodash';
+import { cloneDeep, sortBy } from 'lodash';
 import { AccordionContent, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui';
 import { computed, nextTick, ref, toRefs, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -171,6 +171,23 @@ function removeItem(index: number) {
 	performRemoval(index);
 }
 
+function copyItem(item: Record<string, unknown>, index: number) {
+	if (!value.value || !Array.isArray(internalValue.value)) return;
+
+	if (props.limit !== undefined && internalValue.value.length >= props.limit) {
+		return;
+	}
+
+	const copiedItem = cloneDeep(item);
+	const newId = makeRowId();
+	rowIds.value.splice(index + 1, 0, newId);
+
+	const newValue = [...internalValue.value];
+	newValue.splice(index + 1, 0, copiedItem);
+
+	emitValue(newValue);
+}
+
 function performRemoval(index: number) {
 	const removedId = rowIds.value[index];
 	rowIds.value.splice(index, 1);
@@ -271,6 +288,13 @@ function emitValue(value?: Record<string, unknown>[]) {
 									</AccordionTrigger>
 
 									<div v-if="!nonEditable" class="item-actions">
+										<VIcon
+											v-if="!disabled"
+											v-tooltip="$t('duplicate')"
+											name="content_copy"
+											clickable
+											@click.stop="copyItem(element.data, index)"
+										/>
 										<VRemove :confirm="showConfirmDiscard" :disabled @action="removeItem(index)" />
 									</div>
 								</div>

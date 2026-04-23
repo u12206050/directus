@@ -25,6 +25,7 @@ import {
 	getNodeName,
 	initialValueForComparator,
 	isJsonFilter,
+	stripRelationshipPrefix,
 } from './utils';
 import VFieldList from '@/components/v-field-list/v-field-list.vue';
 import VIcon from '@/components/v-icon/v-icon.vue';
@@ -48,6 +49,7 @@ type FilterInfoField = {
 	node: Filter;
 	field: string;
 	comparator: string;
+	isNoneGroup?: boolean;
 };
 
 interface Props {
@@ -90,16 +92,23 @@ const filterInfo = computed<(FilterInfo | FilterInfoField)[]>({
 			const name = getNodeName(node);
 			const isField = name.startsWith('_') === false;
 
-			return isField
-				? ({
-						id,
-						isField,
-						name,
-						field: getField(node),
-						comparator: getComparator(node),
-						node,
-					} as FilterInfoField)
-				: ({ id, name, isField, node } as FilterInfo);
+			if (isField) {
+				const field = getField(node);
+				const comparator = getComparator(node);
+				const isNoneGroup = comparator === '_none';
+
+				return {
+					id,
+					isField,
+					name,
+					field,
+					comparator,
+					node,
+					isNoneGroup,
+				} as FilterInfoField;
+			}
+
+			return { id, name, isField, node } as FilterInfo;
 		});
 	},
 	set(newVal) {
@@ -261,7 +270,8 @@ function getCompareOptions(name: string) {
 			const relations = relationsStore.getRelationsForField(props.collection, name);
 
 			if (relations[0]) {
-				type = fieldsStore.getField(relations[0].collection, relations[0].field)?.type || 'unknown';
+				const relatedField = fieldsStore.getField(relations[0].collection, relations[0].field);
+				type = relatedField?.type || 'unknown';
 			}
 		}
 	}
@@ -288,6 +298,140 @@ function isExistingField(node: Record<string, any>): boolean {
 	const field = fieldsStore.getField(props.collection, fieldKey);
 	return !!field;
 }
+
+/**
+ * Gets the target collection for filtering when using an alias field (o2m, m2m).
+ *
+ * This function is specifically used in filter contexts where you need to determine
+ * which collection to use for nested filters when filtering by a relational alias field.
+ * For example, when filtering by a "posts" alias field (o2m) on a "users" collection,
+ * the target collection would be "posts" since that's where the actual filter conditions
+ * should be applied.
+ *
+ * @param fieldPath - The path to the alias field (e.g., "posts" or "categories")
+ * @returns The target collection name for filtering, or null if:
+ *   - The collection is not provided
+ *   - The field doesn't exist
+ *   - The field is not an alias field
+ *   - The relation type is not o2m or m2m
+ */
+function getRelatedCollectionForField(fieldPath: string): string | null {
+	if (!props.collection) return null;
+
+	const field = fieldsStore.getField(props.collection, fieldPath);
+	if (!field) return null;
+
+	// For alias fields (o2m, m2m), get the related collection
+	if (field.type !== 'alias') return null;
+	const relations = relationsStore.getRelationsForField(props.collection, fieldPath);
+
+	if (relations[0]) {
+		return relations[0].collection;
+	}
+
+	return null;
+}
+
+function handleNoneGroupFilter(index: number, newFilters: Filter[]) {
+	const nodeInfo = filterInfo.value[index];
+	if (!nodeInfo?.isField || !nodeInfo.isNoneGroup) return;
+
+	const relationshipField = nodeInfo.field;
+	// Filters within _none should NOT have the relationship prefix in the stored JSON
+	// The backend handles the relationship context automatically
+	// Note: Nested relationship filters (e.g., groupId: { status: { _eq: ... } }) should be
+	// preserved as-is since they're already correctly structured for the collection context
+	const filtersWithoutPrefix = stripRelationshipPrefix(newFilters, relationshipField);
+
+	// _none expects a single Filter object with flat fields (not wrapped in _and)
+	// Multiple conditions are implicitly ANDed by having multiple top-level fields
+	// Merge all filters into a single flat object
+	let noneFilter: Filter = {};
+
+	if (filtersWithoutPrefix.length > 0) {
+		for (const filter of filtersWithoutPrefix) {
+			if (filter && typeof filter === 'object') {
+				noneFilter = { ...noneFilter, ...filter };
+			}
+		}
+	}
+
+	// Update the node with the new filters
+	filterSync.value = filterSync.value.map((filter, filterIndex) => {
+		if (filterIndex === index) {
+			return {
+				[relationshipField]: {
+					_none: noneFilter,
+				},
+			} as Filter;
+		}
+
+		return filter;
+	});
+}
+
+function handleNoneGroupRemoveNode(index: number, removeIds: string[]) {
+	const nodeInfo = filterInfo.value[index];
+	if (!nodeInfo?.isField || !nodeInfo.isNoneGroup) return;
+
+	const currentFilters = getNoneGroupFilters(nodeInfo);
+	const removeIndex = Number(removeIds[0]);
+	const newFilters = currentFilters.filter((_, i) => i !== removeIndex);
+	handleNoneGroupFilter(index, newFilters);
+}
+
+function getNoneGroupFilters(nodeInfo: FilterInfoField): Filter[] {
+	if (!nodeInfo.isNoneGroup) return [];
+
+	const noneFilter = get(nodeInfo.node, `${nodeInfo.field}._none`, {}) as Filter;
+	const relationshipField = nodeInfo.field;
+
+	if (!noneFilter || Object.keys(noneFilter).length === 0) return [];
+
+	// Strip prefix for display (in case it exists from old data or was accidentally added)
+	// Filters within _none should not have the prefix in stored JSON
+	const strippedFilters = stripRelationshipPrefix([noneFilter], relationshipField);
+	const strippedFilter = strippedFilters[0];
+
+	if (!strippedFilter) return [];
+
+	// _none filters use flat objects with multiple fields (not _and/_or)
+	// Convert the flat object into an array of single-field filters for the nodes component
+	// Each top-level key becomes its own filter
+	const fieldFilters: Filter[] = [];
+
+	for (const [key, value] of Object.entries(strippedFilter)) {
+		if (key !== '_and' && key !== '_or' && value !== undefined) {
+			fieldFilters.push({ [key]: value } as Filter);
+		}
+	}
+
+	return fieldFilters;
+}
+
+function handleNoneGroupAddField(index: number, fieldKey: string) {
+	const nodeInfo = filterInfo.value[index];
+	if (!nodeInfo?.isField || !nodeInfo.isNoneGroup) return;
+
+	const relatedCollection = getRelatedCollectionForField(nodeInfo.field) || props.collection;
+	const currentFilters = getNoneGroupFilters(nodeInfo);
+
+	// Create a new filter node for the selected field
+	const field = fieldsStore.getField(relatedCollection, fieldKey);
+	if (!field) return;
+
+	const fieldType = field.type || 'unknown';
+	const filterOperators = getFilterOperatorsForType(fieldType, { includeValidation: props.includeValidation });
+	const operator = filterOperators[0] || 'eq';
+	const booleanOperators: string[] = ['empty', 'nempty', 'null', 'nnull'];
+	const initialValue = booleanOperators.includes(operator) ? true : null;
+
+	// Create filter with the field key (without prefix, will be added automatically)
+	const newFilter = fieldToFilter(fieldKey, `_${operator}`, initialValue);
+	const updatedFilters = [...currentFilters, newFilter];
+
+	handleNoneGroupFilter(index, updatedFilters);
+}
 </script>
 
 <template>
@@ -305,7 +449,65 @@ function isExistingField(node: Record<string, any>): boolean {
 	>
 		<template #item="{ element, index }">
 			<li class="row">
-				<div v-if="nodeInfoAt(index).isField" block class="node field">
+				<div v-if="nodeInfoAt(index).isField && fieldInfoAt(index).isNoneGroup" class="node none-group">
+					<div class="header" :class="{ inline }">
+						<VIcon name="drag_indicator" class="drag-handle" small />
+						<div class="logic-type none">
+							<span class="key">{{ getFieldPreview(element) }}</span>
+							<span class="text">
+								{{ `— ${t('interfaces.filter.none_of_the_following')}` }}
+							</span>
+						</div>
+						<VMenu placement="bottom-start" show-arrow>
+							<template #activator="{ toggle }">
+								<VIcon
+									v-tooltip="t('interfaces.filter.add_filter')"
+									name="add"
+									class="add-filter"
+									small
+									clickable
+									@click="toggle"
+								/>
+							</template>
+							<VFieldList
+								:collection="getRelatedCollectionForField(fieldInfoAt(index).field) || collection"
+								include-functions
+								:excluded-functions="includeJsonFunction ? [] : ['json']"
+								:include-relations="includeRelations"
+								:relational-field-selectable="relationalFieldSelectable"
+								:allow-select-all="false"
+								:raw-field-names="rawFieldNames"
+								@add="handleNoneGroupAddField(index, $event[0])"
+							/>
+						</VMenu>
+						<span class="delete">
+							<VIcon
+								v-tooltip="$t('delete_label')"
+								name="close"
+								small
+								clickable
+								@click="$emit('remove-node', [index])"
+							/>
+						</span>
+					</div>
+					<Nodes
+						:filter="getNoneGroupFilters(fieldInfoAt(index))"
+						:collection="getRelatedCollectionForField(fieldInfoAt(index).field) || collection"
+						:depth="depth + 1"
+						:inline="inline"
+						:include-json-function="includeJsonFunction"
+						:raw-field-names="rawFieldNames"
+						:variable-input-enabled="variableInputEnabled"
+						:include-validation="includeValidation"
+						:include-relations="includeRelations"
+						:relational-field-selectable="relationalFieldSelectable"
+						@change="$emit('change')"
+						@remove-node="handleNoneGroupRemoveNode(index, $event)"
+						@update:filter="handleNoneGroupFilter(index, $event)"
+					/>
+				</div>
+
+				<div v-else-if="nodeInfoAt(index).isField" block class="node field">
 					<div class="header" :class="{ inline, 'raw-field-names': rawFieldNames }">
 						<VIcon name="drag_indicator" class="drag-handle" small></VIcon>
 						<JsonFilterNode
@@ -454,6 +656,23 @@ function isExistingField(node: Record<string, any>): boolean {
 				background-color: var(--secondary-25);
 			}
 		}
+
+		&.none .key {
+			color: var(--theme--danger);
+			background-color: var(--theme--danger-background);
+			cursor: default;
+
+			&:hover {
+				background-color: var(--theme--danger-subdued);
+			}
+		}
+	}
+
+	.add-filter {
+		--v-icon-color: var(--theme--primary);
+		--v-icon-color-hover: var(--theme--primary-accent);
+
+		margin-inline-start: 0.5rem;
 	}
 
 	:deep(.inline-display) {

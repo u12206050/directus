@@ -2,7 +2,7 @@
 defineOptions({ inheritAttrs: false });
 
 import type { Field } from '@directus/types';
-import { isEqual, sortBy } from 'lodash';
+import { cloneDeep, isEqual, sortBy } from 'lodash';
 import { computed, ref, toRefs } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Draggable from 'vuedraggable';
@@ -161,6 +161,24 @@ function removeItem(item: Record<string, any>) {
 	}
 }
 
+function copyItem(item: Record<string, any>, index: number) {
+	if (!value.value || !Array.isArray(internalValue.value)) return;
+
+	if (props.limit !== undefined && internalValue.value.length >= props.limit) {
+		return;
+	}
+
+	const copiedItem = cloneDeep(item);
+	const newValue = [...internalValue.value];
+	newValue.splice(index + 1, 0, copiedItem);
+
+	if (props.fields && props.sort) {
+		emitValue(sortBy(newValue, props.sort));
+	} else {
+		emitValue(newValue);
+	}
+}
+
 function addNew() {
 	isNewItem.value = true;
 
@@ -254,6 +272,13 @@ const menuActive = computed(() => drawerOpen.value || confirmDiscard.value);
 					<div class="spacer" />
 
 					<div v-if="!nonEditable" class="item-actions">
+						<VIcon
+							v-if="!disabled"
+							v-tooltip="$t('duplicate')"
+							name="content_copy"
+							clickable
+							@click.stop="copyItem(element, index)"
+						/>
 						<VRemove confirm :disabled @action="removeItem(element)" />
 					</div>
 				</VListItem>
