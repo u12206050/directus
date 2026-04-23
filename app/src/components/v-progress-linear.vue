@@ -33,9 +33,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 defineEmits(['animationiteration']);
 
+// Success only at 100%
 const color = computed(() => {
-	if (props.value <= 33) return 'danger';
-	if (props.value <= 66) return 'warning';
+	if (props.value <= 50) return 'danger';
+	if (props.value <= 99) return 'warning';
 	return 'success';
 });
 </script>

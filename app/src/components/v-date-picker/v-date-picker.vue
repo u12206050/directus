@@ -29,6 +29,8 @@ interface Props {
 	disabled?: boolean;
 	includeSeconds?: boolean;
 	use24?: boolean;
+	min?: DateValue;
+	max?: DateValue;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -154,11 +156,14 @@ function setToNow() {
 			v-slot="{ weekDays, grid, date }"
 			:model-value="calendarValue"
 			:disabled="disabled"
+			:min-value="min"
+			:max-value="max"
 			class="calendar"
 			fixed-weeks
 			weekday-format="short"
 			:locale="userStore.language"
 			:dir="isRTL ? 'rtl' : 'ltr'"
+			:week-starts-on="1"
 			@update:model-value="handleDateChange"
 		>
 			<CalendarHeader v-if="showCalendar" class="calendar-header">
