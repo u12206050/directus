@@ -58,6 +58,20 @@ const showInlineField = computed(() => isEditing.value || (canEditInline.value &
 
 const valueTabindex = computed(() => (isInteractive.value && !showInlineField.value ? 0 : undefined));
 
+/** True when the current value is outside the configured min/max bounds. */
+const invalid = computed(() => {
+	if (!props.value || !isValidValue.value || isDynamic.value) return false;
+
+	const current = dateToValue(parseDate(props.value, props.type));
+	const minValue = min?.value;
+	const maxValue = max?.value;
+
+	if (minValue && current.compare(minValue) < 0) return true;
+	if (maxValue && current.compare(maxValue) > 0) return true;
+
+	return false;
+});
+
 function unsetValue(e: Event) {
 	e.preventDefault();
 	e.stopPropagation();
@@ -189,7 +203,7 @@ function parse$NOW(value: string) {
 		seamless
 	>
 		<template #activator="{ toggle, active }">
-			<VListItem block activator :disabled :non-editable :active>
+			<VListItem block activator :disabled :non-editable :active :class="{ invalid }">
 				<div
 					class="value"
 					:tabindex="valueTabindex"
@@ -255,6 +269,11 @@ function parse$NOW(value: string) {
 
 	&.disabled:not(.non-editable) {
 		--v-list-item-background-color: var(--theme--form--field--input--background-subdued);
+	}
+
+	&.invalid {
+		--v-list-item-border-color: var(--theme--danger);
+		--v-list-item-border-color-hover: var(--theme--danger);
 	}
 
 	&.active:not(.disabled),
