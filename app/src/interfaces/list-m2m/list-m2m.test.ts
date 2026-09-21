@@ -60,16 +60,35 @@ vi.mock('@/composables/use-column-widths', () => ({
 
 vi.mock('@/stores/fields', () => ({
 	useFieldsStore: () => ({
-		getFieldsForCollection: vi.fn(() => []),
+		getFieldsForCollection: vi.fn((collection: string) => {
+			if (collection === 'related-collection') {
+				return [
+					{ field: 'id', name: 'ID', type: 'integer' },
+					{ field: 'title', name: 'Title', type: 'string' },
+					{ field: 'status', name: 'Status', type: 'string' },
+				];
+			}
+
+			return [
+				{ field: 'id', name: 'ID', type: 'integer' },
+				{ field: 'related_id', name: 'Related', type: 'integer' },
+				{ field: 'item_id', name: 'Item', type: 'integer' },
+				{ field: 'quantity', name: 'Quantity', type: 'integer' },
+				{ field: 'notes', name: 'Notes', type: 'string' },
+			];
+		}),
 		getField: mockGetField,
 		getPrimaryKeyFieldForCollection: vi.fn(() => ({ field: 'id' })),
 	}),
 }));
 
+const mockUpdate = vi.hoisted(() => vi.fn());
+const mockGetItemEdits = vi.hoisted(() => vi.fn(() => ({})));
+
 vi.mock('@/composables/use-relation-multiple', () => ({
 	useRelationMultiple: () => ({
 		create: vi.fn(),
-		update: vi.fn(),
+		update: mockUpdate,
 		remove: vi.fn(),
 		select: vi.fn(),
 		displayItems: ref([{ id: '1', related_id: { id: '10' }, $type: 'existingItem', $index: 0, $edits: 0 }]),
@@ -82,13 +101,13 @@ vi.mock('@/composables/use-relation-multiple', () => ({
 			cleanItem: vi.fn((item: any) => item),
 			getPage: vi.fn(),
 			isLocalItem: vi.fn(() => false),
-			getItemEdits: vi.fn(() => ({})),
+			getItemEdits: mockGetItemEdits,
 			isEmpty: vi.fn(() => false),
 		})),
 		cleanItem: vi.fn((item: any) => item),
 		isItemSelected: vi.fn(() => false),
 		isLocalItem: vi.fn(() => false),
-		getItemEdits: vi.fn(() => ({})),
+		getItemEdits: mockGetItemEdits,
 	}),
 }));
 
@@ -109,7 +128,20 @@ const global: GlobalMountOptions = {
 		VPagination: true,
 		VSelect: true,
 		VTable: true,
-		DrawerBatch: true,
+		DrawerBatch: {
+			name: 'DrawerBatch',
+			template: '<div class="drawer-batch" />',
+			props: [
+				'active',
+				'primaryKeys',
+				'collection',
+				'relatedCollection',
+				'junctionField',
+				'circularField',
+				'junctionFieldLocation',
+				'stageOnSave',
+			],
+		},
 		DrawerCollection: true,
 		DrawerItem: true,
 		RenderTemplate: true,
@@ -323,6 +355,80 @@ describe('list-m2m', () => {
 
 				expect(wrapper.find('.item-actions').exists()).toBe(true);
 				expect(wrapper.find('.item-actions v-remove-stub').exists()).toBe(true);
+			});
+		});
+
+		describe('batch edit', () => {
+			beforeEach(() => {
+				mockUpdate.mockReset();
+				mockGetItemEdits.mockReset();
+				mockGetItemEdits.mockReturnValue({});
+			});
+
+			it('passes junction relation info to DrawerBatch', () => {
+				const wrapper = mount(ListM2M, {
+					props: { ...listProps, layout: LAYOUTS.TABLE },
+					global: tableGlobal,
+				});
+
+				const drawerBatch = wrapper.findComponent({ name: 'DrawerBatch' });
+
+				expect(drawerBatch.props('collection')).toBe('junction-collection');
+				expect(drawerBatch.props('relatedCollection')).toBe('related-collection');
+				expect(drawerBatch.props('junctionField')).toBe('related_id');
+				expect(drawerBatch.props('circularField')).toBe('item_id');
+			});
+
+			it('stages junction-level edits at the top level rather than under the related FK', async () => {
+				const wrapper = mount(ListM2M, {
+					props: { ...listProps, layout: LAYOUTS.TABLE },
+					global: tableGlobal,
+				});
+
+				const setupState = (wrapper.vm as any).$.setupState;
+				setupState.selection = [{ id: '1', related_id: { id: '10' }, $type: 'existingItem', $index: 0, $edits: 0 }];
+
+				await wrapper.findComponent({ name: 'DrawerBatch' }).vm.$emit('input', { quantity: 5, notes: 'updated' });
+
+				expect(mockUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						quantity: 5,
+						notes: 'updated',
+						id: '1',
+						related_id: { id: '10' },
+					}),
+				);
+
+				const staged = mockUpdate.mock.calls[0]![0];
+				expect(staged.related_id).not.toHaveProperty('quantity');
+				expect(staged.related_id).not.toHaveProperty('notes');
+			});
+
+			it('stages related-collection edits under the junction field', async () => {
+				const wrapper = mount(ListM2M, {
+					props: { ...listProps, layout: LAYOUTS.TABLE },
+					global: tableGlobal,
+				});
+
+				const setupState = (wrapper.vm as any).$.setupState;
+				setupState.selection = [{ id: '1', related_id: { id: '10' }, $type: 'existingItem', $index: 0, $edits: 0 }];
+
+				await wrapper.findComponent({ name: 'DrawerBatch' }).vm.$emit('input', {
+					quantity: 3,
+					related_id: { title: 'Updated', status: 'draft' },
+				});
+
+				expect(mockUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						quantity: 3,
+						id: '1',
+						related_id: expect.objectContaining({
+							id: '10',
+							title: 'Updated',
+							status: 'draft',
+						}),
+					}),
+				);
 			});
 		});
 
