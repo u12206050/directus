@@ -1,6 +1,11 @@
-import type { ClientFilterOperator, FieldFilter, FieldFilterOperator, Filter } from '@directus/types';
-import { toArray } from '@directus/utils';
-import { get, isPlainObject } from 'lodash';
+import type { ClientFilterOperator, Field, FieldFilter, FieldFilterOperator, Filter, Relation } from '@directus/types';
+import { getRelationType, toArray } from '@directus/utils';
+import { get, isPlainObject, set } from 'lodash';
+
+export type RelatedCollectionResolverDeps = {
+	getField: (collection: string, field: string) => Field | null;
+	getRelationsForField: (collection: string, field: string) => Relation[];
+};
 
 export const JSON_VALUE_KEY = '$jsonValue';
 
@@ -225,4 +230,124 @@ export function addRelationshipPrefix(filters: Filter[], relationshipField: stri
 
 		return result as Filter;
 	});
+}
+
+function findRelationForField(relations: Relation[], field: string): Relation | undefined {
+	return relations.find((relation) => relation.field === field || relation.meta?.one_field === field);
+}
+
+function getNextCollectionForSegment(
+	currentCollection: string,
+	segment: string,
+	deps: RelatedCollectionResolverDeps,
+): string | null {
+	if (segment.includes(':')) {
+		const [, relatedCollection] = segment.split(':', 2);
+		return relatedCollection || null;
+	}
+
+	const relations = deps.getRelationsForField(currentCollection, segment);
+	const relation = findRelationForField(relations, segment);
+	if (!relation) return null;
+
+	const nextCollection = relation.field === segment ? relation.related_collection : relation.collection;
+	return nextCollection || null;
+}
+
+/**
+ * Walks a dot-separated field path and returns the collection at the end of the prefix.
+ */
+export function getCollectionAtFieldPath(
+	collection: string,
+	fieldPath: string,
+	deps: RelatedCollectionResolverDeps,
+): string | null {
+	if (!fieldPath) return collection;
+
+	let currentCollection = collection;
+
+	for (const segment of fieldPath.split('.')) {
+		const nextCollection = getNextCollectionForSegment(currentCollection, segment, deps);
+		if (!nextCollection) return null;
+		currentCollection = nextCollection;
+	}
+
+	return currentCollection;
+}
+
+function getRelatedCollectionFromRelation(
+	collection: string,
+	field: string,
+	deps: RelatedCollectionResolverDeps,
+): string | null {
+	const fieldInfo = deps.getField(collection, field);
+	if (!fieldInfo || fieldInfo.type !== 'alias') return null;
+
+	const relations = deps.getRelationsForField(collection, field);
+	const relation = findRelationForField(relations, field);
+	if (!relation) return null;
+
+	const relationType = getRelationType({
+		relation,
+		collection,
+		field,
+	});
+
+	// o2m and m2m: _none/_some conditions apply on the many/junction side
+	if (relationType === 'o2m') {
+		return relation.meta?.many_collection ?? relation.collection;
+	}
+
+	return null;
+}
+
+/**
+ * Builds a nested filter node for a `_none` group on a relational field path.
+ */
+export function buildNoneFilterNode(relationshipField: string, noneFilter: Filter = {}): Filter {
+	return set({}, relationshipField, { _none: noneFilter }) as Filter;
+}
+
+/**
+ * Reads the `_none` sub-filter for a relationship field path (nested or m2a flat keys).
+ */
+export function getNoneFilter(node: Record<string, unknown>, fieldKey: string): Filter {
+	const noneFilter = get(node, `${fieldKey}._none`);
+
+	return noneFilter && typeof noneFilter === 'object' && !Array.isArray(noneFilter) ? (noneFilter as Filter) : {};
+}
+
+/**
+ * Resolves the target collection for nested filters within a `_none` group on a relational alias field.
+ */
+export function getRelatedCollectionForField(
+	collection: string | null | undefined,
+	fieldPath: string,
+	deps: RelatedCollectionResolverDeps,
+): string | null {
+	if (!collection) return null;
+
+	const parts = fieldPath.split('.');
+	const lastSegment = parts.at(-1)!;
+
+	// m2a target collection is encoded in the last segment (e.g. `item:articles`)
+	if (lastSegment.includes(':')) {
+		const [, relatedCollection] = lastSegment.split(':', 2);
+		if (!relatedCollection) return null;
+		if (parts.length === 1) return relatedCollection;
+
+		const parentPath = parts.slice(0, -1).join('.');
+		const parentCollection = getCollectionAtFieldPath(collection, parentPath, deps);
+		return parentCollection ? relatedCollection : null;
+	}
+
+	if (parts.length === 1) {
+		return getRelatedCollectionFromRelation(collection, fieldPath, deps);
+	}
+
+	const parentPath = parts.slice(0, -1).join('.');
+	const parentCollection = getCollectionAtFieldPath(collection, parentPath, deps);
+	if (!parentCollection) return null;
+
+	return getRelatedCollectionFromRelation(parentCollection, lastSegment, deps);
 }

@@ -18,11 +18,14 @@ import InputGroup from './input-group.vue';
 import JsonFilterNode from './json-filter-node.vue';
 import {
 	buildJsonFilter,
+	buildNoneFilterNode,
 	fieldHasFunction,
 	fieldToFilter,
 	getComparator,
 	getField,
 	getNodeName,
+	getNoneFilter,
+	getRelatedCollectionForField,
 	initialValueForComparator,
 	isJsonFilter,
 	stripRelationshipPrefix,
@@ -299,37 +302,11 @@ function isExistingField(node: Record<string, any>): boolean {
 	return !!field;
 }
 
-/**
- * Gets the target collection for filtering when using an alias field (o2m, m2m).
- *
- * This function is specifically used in filter contexts where you need to determine
- * which collection to use for nested filters when filtering by a relational alias field.
- * For example, when filtering by a "posts" alias field (o2m) on a "users" collection,
- * the target collection would be "posts" since that's where the actual filter conditions
- * should be applied.
- *
- * @param fieldPath - The path to the alias field (e.g., "posts" or "categories")
- * @returns The target collection name for filtering, or null if:
- *   - The collection is not provided
- *   - The field doesn't exist
- *   - The field is not an alias field
- *   - The relation type is not o2m or m2m
- */
-function getRelatedCollectionForField(fieldPath: string): string | null {
-	if (!props.collection) return null;
-
-	const field = fieldsStore.getField(props.collection, fieldPath);
-	if (!field) return null;
-
-	// For alias fields (o2m, m2m), get the related collection
-	if (field.type !== 'alias') return null;
-	const relations = relationsStore.getRelationsForField(props.collection, fieldPath);
-
-	if (relations[0]) {
-		return relations[0].collection;
-	}
-
-	return null;
+function resolveRelatedCollectionForField(fieldPath: string): string | null {
+	return getRelatedCollectionForField(props.collection, fieldPath, {
+		getField: fieldsStore.getField,
+		getRelationsForField: relationsStore.getRelationsForField,
+	});
 }
 
 function handleNoneGroupFilter(index: number, newFilters: Filter[]) {
@@ -359,11 +336,7 @@ function handleNoneGroupFilter(index: number, newFilters: Filter[]) {
 	// Update the node with the new filters
 	filterSync.value = filterSync.value.map((filter, filterIndex) => {
 		if (filterIndex === index) {
-			return {
-				[relationshipField]: {
-					_none: noneFilter,
-				},
-			} as Filter;
+			return buildNoneFilterNode(relationshipField, noneFilter);
 		}
 
 		return filter;
@@ -383,7 +356,7 @@ function handleNoneGroupRemoveNode(index: number, removeIds: string[]) {
 function getNoneGroupFilters(nodeInfo: FilterInfoField): Filter[] {
 	if (!nodeInfo.isNoneGroup) return [];
 
-	const noneFilter = get(nodeInfo.node, `${nodeInfo.field}._none`, {}) as Filter;
+	const noneFilter = getNoneFilter(nodeInfo.node as Record<string, unknown>, nodeInfo.field);
 	const relationshipField = nodeInfo.field;
 
 	if (!noneFilter || Object.keys(noneFilter).length === 0) return [];
@@ -413,7 +386,7 @@ function handleNoneGroupAddField(index: number, fieldKey: string) {
 	const nodeInfo = filterInfo.value[index];
 	if (!nodeInfo?.isField || !nodeInfo.isNoneGroup) return;
 
-	const relatedCollection = getRelatedCollectionForField(nodeInfo.field) || props.collection;
+	const relatedCollection = resolveRelatedCollectionForField(nodeInfo.field) || props.collection;
 	const currentFilters = getNoneGroupFilters(nodeInfo);
 
 	// Create a new filter node for the selected field
@@ -470,7 +443,7 @@ function handleNoneGroupAddField(index: number, fieldKey: string) {
 								/>
 							</template>
 							<VFieldList
-								:collection="getRelatedCollectionForField(fieldInfoAt(index).field) || collection"
+								:collection="resolveRelatedCollectionForField(fieldInfoAt(index).field) || collection"
 								include-functions
 								:excluded-functions="includeJsonFunction ? [] : ['json']"
 								:include-relations="includeRelations"
@@ -492,7 +465,7 @@ function handleNoneGroupAddField(index: number, fieldKey: string) {
 					</div>
 					<Nodes
 						:filter="getNoneGroupFilters(fieldInfoAt(index))"
-						:collection="getRelatedCollectionForField(fieldInfoAt(index).field) || collection"
+						:collection="resolveRelatedCollectionForField(fieldInfoAt(index).field) || collection"
 						:depth="depth + 1"
 						:inline="inline"
 						:include-json-function="includeJsonFunction"
