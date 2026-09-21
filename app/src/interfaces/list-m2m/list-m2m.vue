@@ -402,11 +402,7 @@ function stageBatchEdits(edits: Record<string, any>) {
 			$index: item.$index,
 			$type: item.$type,
 			$edits: item.$edits,
-			...merge(getItemEdits(item), {
-				[junctionField]: {
-					...edits,
-				},
-			}),
+			...merge(getItemEdits(item), edits),
 		};
 
 		if (junctionId !== null) {
@@ -762,7 +758,11 @@ const menuActive = computed(() => editModalActive.value || selectModalActive.val
 		<DrawerBatch
 			v-model:active="batchEditActive"
 			:primary-keys="selectedKeys"
-			:collection="relationInfo.relatedCollection.collection"
+			:collection="relationInfo.junctionCollection.collection"
+			:related-collection="relationInfo.relatedCollection.collection"
+			:junction-field="relationInfo.junctionField.field"
+			:circular-field="relationInfo.reverseJunctionField.field"
+			:junction-field-location="junctionFieldLocation"
 			stage-on-save
 			@input="stageBatchEdits"
 		/>

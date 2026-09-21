@@ -27,6 +27,15 @@ const props = defineProps<{
 	active?: boolean;
 	edits?: Record<string, any>;
 	stageOnSave?: boolean;
+	/**
+	 * When set with relatedCollection, renders a dual form (related + junction fields)
+	 * matching DrawerItem / OverlayItem for relational batch editing.
+	 */
+	junctionField?: string | null;
+	relatedCollection?: string | null;
+	/** Relationship FK back to the parent — omitted from the junction form */
+	circularField?: string | null;
+	junctionFieldLocation?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +51,45 @@ const { save, cancel, saving, validationErrors } = useActions();
 const { collection } = toRefs(props);
 const { primaryKeyField } = useCollection(collection);
 const { getTranslationsFields, saveBatchWithTranslations } = useTranslationsFields();
+const { fields: junctionFields, relatedFields, showRelatedForm } = useJunctionFields();
+
+const swapFormOrder = computed(() => props.junctionFieldLocation === 'top');
+const hasRelatedFields = computed(() => relatedFields.value.some((field) => !field.meta?.hidden));
+const hasJunctionFields = computed(() => junctionFields.value.some((field) => !field.meta?.hidden));
+
+function setRelationEdits(edits: Record<string, any>) {
+	if (!props.junctionField) return;
+
+	internalEdits.value = {
+		...internalEdits.value,
+		[props.junctionField]: edits,
+	};
+}
+
+function useJunctionFields() {
+	const fieldsStore = useFieldsStore();
+
+	const showRelatedForm = computed(() => Boolean(props.junctionField && props.relatedCollection));
+
+	const relatedFields = computed(() => {
+		if (!props.relatedCollection) return [];
+		return fieldsStore.getFieldsForCollection(props.relatedCollection);
+	});
+
+	const fields = computed(() => {
+		if (!showRelatedForm.value) return [];
+
+		const omitFields = new Set(
+			[primaryKeyField.value?.field, props.junctionField, props.circularField].filter(
+				(field): field is string => typeof field === 'string' && field.length > 0,
+			),
+		);
+
+		return fieldsStore.getFieldsForCollection(props.collection).filter((field) => !omitFields.has(field.field));
+	});
+
+	return { fields, relatedFields, showRelatedForm };
+}
 
 function useEdits() {
 	const localEdits = ref<Record<string, any>>({});
@@ -249,13 +297,31 @@ function useTranslationsFields() {
 		</template>
 
 		<div class="drawer-batch-content">
-			<VForm
-				v-model="internalEdits"
-				:collection="collection"
-				batch-mode
-				primary-key="+"
-				:validation-errors="validationErrors"
-			/>
+			<div class="drawer-batch-order" :class="{ swap: swapFormOrder }">
+				<VForm
+					v-if="showRelatedForm"
+					:model-value="internalEdits?.[junctionField!]"
+					:fields="relatedFields"
+					batch-mode
+					primary-key="+"
+					:show-no-visible-fields="false"
+					:autofocus="!swapFormOrder"
+					:show-divider="!swapFormOrder && hasJunctionFields"
+					@update:model-value="setRelationEdits"
+				/>
+
+				<VForm
+					v-model="internalEdits"
+					:collection="showRelatedForm ? undefined : collection"
+					:fields="showRelatedForm ? junctionFields : undefined"
+					batch-mode
+					primary-key="+"
+					:show-no-visible-fields="false"
+					:autofocus="swapFormOrder || !showRelatedForm"
+					:show-divider="swapFormOrder && hasRelatedFields"
+					:validation-errors="validationErrors"
+				/>
+			</div>
 		</div>
 	</VDrawer>
 </template>
@@ -268,5 +334,12 @@ function useTranslationsFields() {
 .drawer-batch-content {
 	padding: var(--content-padding);
 	padding-block-end: var(--content-padding-bottom);
+}
+
+.drawer-batch-order {
+	&.swap {
+		display: flex;
+		flex-direction: column-reverse;
+	}
 }
 </style>
