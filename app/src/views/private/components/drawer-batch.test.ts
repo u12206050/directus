@@ -13,6 +13,25 @@ const mockFetchAll = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 const mockFieldsStore = vi.hoisted(() => ({
 	getField: vi.fn(),
 	getPrimaryKeyFieldForCollection: vi.fn(),
+	getFieldsForCollection: vi.fn((collection: string) => {
+		if (collection === 'related') {
+			return [
+				{ field: 'id', name: 'ID', type: 'integer', collection: 'related', meta: {}, schema: null },
+				{ field: 'title', name: 'Title', type: 'string', collection: 'related', meta: {}, schema: null },
+			];
+		}
+
+		if (collection === 'junction') {
+			return [
+				{ field: 'id', name: 'ID', type: 'integer', collection: 'junction', meta: {}, schema: null },
+				{ field: 'related_id', name: 'Related', type: 'integer', collection: 'junction', meta: {}, schema: null },
+				{ field: 'item_id', name: 'Item', type: 'integer', collection: 'junction', meta: {}, schema: null },
+				{ field: 'quantity', name: 'Quantity', type: 'integer', collection: 'junction', meta: {}, schema: null },
+			];
+		}
+
+		return [];
+	}),
 }));
 
 const mockRelationsStore = vi.hoisted(() => ({
@@ -67,7 +86,11 @@ function mountDrawerBatch(props: Record<string, any> = {}) {
 			directives: { tooltip: Tooltip },
 			stubs: {
 				VDrawer: { template: '<div><slot /><slot name="actions" /></div>' },
-				VForm: { template: '<div />' },
+				VForm: {
+					name: 'VForm',
+					template: '<div class="v-form" />',
+					props: ['modelValue', 'fields', 'collection', 'batchMode', 'primaryKey'],
+				},
 				PrivateViewHeaderBarActionButton: { template: '<button />' },
 			},
 		},
@@ -499,5 +522,39 @@ describe('stageOnSave with translations', () => {
 		expect(emitted![0]![0]).toEqual({
 			translations: { create: [{ languages_code: 'en', title: 'New' }] },
 		});
+	});
+});
+
+describe('junction dual form', () => {
+	it('loads related and junction fields when relatedCollection is provided', () => {
+		const wrapper = mountDrawerBatch({
+			collection: 'junction',
+			primaryKeys: [1, 2],
+			stageOnSave: true,
+			junctionField: 'related_id',
+			relatedCollection: 'related',
+			circularField: 'item_id',
+		});
+
+		const forms = wrapper.findAllComponents({ name: 'VForm' });
+		expect(forms).toHaveLength(2);
+
+		const relatedFieldKeys = (forms[0]!.props('fields') as Array<{ field: string }>).map((f) => f.field);
+		const junctionFieldKeys = (forms[1]!.props('fields') as Array<{ field: string }>).map((f) => f.field);
+
+		expect(relatedFieldKeys).toContain('title');
+		expect(junctionFieldKeys).toContain('quantity');
+		expect(junctionFieldKeys).not.toContain('id');
+		expect(junctionFieldKeys).not.toContain('related_id');
+		expect(junctionFieldKeys).not.toContain('item_id');
+	});
+
+	it('renders a single form when relatedCollection is not provided', () => {
+		const wrapper = mountDrawerBatch({
+			collection: 'articles',
+			primaryKeys: [1],
+		});
+
+		expect(wrapper.findAllComponents({ name: 'VForm' })).toHaveLength(1);
 	});
 });
