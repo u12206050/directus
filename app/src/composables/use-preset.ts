@@ -206,6 +206,10 @@ export function usePreset(
 			assign(preset, presetsStore.getBookmark(Number(bookmark.value)));
 		}
 
+		if (temporary) {
+			assign(preset, { filter: null, search: null });
+		}
+
 		localPreset.value = preset;
 		bookmarkSaved.value = true;
 	}
