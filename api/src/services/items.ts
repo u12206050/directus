@@ -679,6 +679,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 		const primaryKeyField = getCollectionFromSchema(this.schema, this.collection).primary;
 
 		const keys: PrimaryKey[] = [];
+		const nestedActionEvents: ActionEventParams[] = [];
 
 		try {
 			await transaction(this.knex, async (knex) => {
@@ -698,6 +699,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 						...opts,
 						overwriteDefaults: opts.overwriteDefaults?.[index],
 						onRequireUserIntegrityCheck: (flags) => (userIntegrityCheckFlags |= flags),
+						bypassEmitAction: (params) => nestedActionEvents.push(params),
 					};
 
 					keys.push(await service.updateOne(primaryKey, omit(item, primaryKeyField), combinedOpts));
@@ -718,6 +720,16 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 		} finally {
 			if (shouldClearCache(this.cache, opts, this.collection)) {
 				await this.cache.clear();
+			}
+		}
+
+		if (opts.emitEvents !== false) {
+			for (const nestedActionEvent of nestedActionEvents) {
+				if (opts.bypassEmitAction) {
+					opts.bypassEmitAction(nestedActionEvent);
+				} else {
+					emitter.emitAction(nestedActionEvent.event, nestedActionEvent.meta, nestedActionEvent.context);
+				}
 			}
 		}
 
@@ -1045,10 +1057,11 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 	async upsertMany(payloads: Partial<Item>[], opts: MutationOptions = {}): Promise<PrimaryKey[]> {
 		if (!opts.mutationTracker) opts.mutationTracker = createMutationTracker();
 
-		const primaryKeys = await transaction(this.knex, async (knex) => {
+		const { primaryKeys, nestedActionEvents } = await transaction(this.knex, async (knex) => {
 			const service = this.fork({ knex });
 
 			const primaryKeys: PrimaryKey[] = [];
+			const nestedActionEvents: ActionEventParams[] = [];
 
 			for (const index in payloads) {
 				const payload = payloads[index]!;
@@ -1057,13 +1070,24 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 					...(opts || {}),
 					overwriteDefaults: opts.overwriteDefaults?.[index],
 					autoPurgeCache: false,
+					bypassEmitAction: (params) => nestedActionEvents.push(params),
 				});
 
 				primaryKeys.push(primaryKey);
 			}
 
-			return primaryKeys;
+			return { primaryKeys, nestedActionEvents };
 		});
+
+		if (opts.emitEvents !== false) {
+			for (const nestedActionEvent of nestedActionEvents) {
+				if (opts.bypassEmitAction) {
+					opts.bypassEmitAction(nestedActionEvent);
+				} else {
+					emitter.emitAction(nestedActionEvent.event, nestedActionEvent.meta, nestedActionEvent.context);
+				}
+			}
+		}
 
 		if (shouldClearCache(this.cache, opts, this.collection)) {
 			await this.cache.clear();

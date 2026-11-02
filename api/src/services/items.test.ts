@@ -7,6 +7,7 @@ import { createTracker, MockClient, Tracker } from 'knex-mock-client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, type MockedFunction, test, vi } from 'vitest';
 import { SchemaHelperMSSQL } from '../database/helpers/schema/dialects/mssql.js';
 import { getDatabaseClient } from '../database/index.js';
+import emitter from '../emitter.js';
 import { assertCollectionActive } from '../permissions/modules/assert-collection-active/assert-collection-active.js';
 import { validateUserCountIntegrity } from '../utils/validate-user-count-integrity.js';
 import { handleVersion } from '../utils/versioning/handle-version.js';
@@ -299,6 +300,58 @@ describe('Integration Tests', () => {
 					createActivitySpy.mockRestore();
 					createRevisionsSpy.mockRestore();
 				}
+			});
+		});
+
+		describe('actions of batch mutations', () => {
+			let committedOnEmit: boolean[];
+
+			beforeEach(() => {
+				let committed = false;
+				committedOnEmit = [];
+
+				const transaction = db.transaction.bind(db);
+
+				vi.spyOn(db, 'transaction').mockImplementation(async (callback) => {
+					const result = await transaction(callback as any);
+					committed = true;
+					return result;
+				});
+
+				vi.spyOn(emitter, 'emitAction').mockImplementation(() => {
+					committedOnEmit.push(committed);
+				});
+			});
+
+			afterEach(() => {
+				vi.mocked(db.transaction).mockRestore();
+				vi.mocked(emitter.emitAction).mockRestore();
+			});
+
+			it('should emit the updateBatch actions after the transaction is committed', async () => {
+				await service.updateBatch([
+					{ id: 1, name: 'first' },
+					{ id: 2, name: 'second' },
+				]);
+
+				expect(committedOnEmit).toEqual([true, true]);
+			});
+
+			it('should not emit the updateBatch actions when the batch fails', async () => {
+				await expect(service.updateBatch([{ id: 1, name: 'first' }, { name: 'second' }])).rejects.toMatchObject({
+					code: 'INVALID_PAYLOAD',
+				});
+
+				expect(emitter.emitAction).not.toHaveBeenCalled();
+			});
+
+			it('should emit the upsertMany actions after the transaction is committed', async () => {
+				await service.upsertMany([
+					{ id: 1, name: 'first' },
+					{ id: 2, name: 'second' },
+				]);
+
+				expect(committedOnEmit).toEqual([true, true]);
 			});
 		});
 
